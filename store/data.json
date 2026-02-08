@@ -1,0 +1,42 @@
+{
+  "user": {
+    "name": "Nirmanyu",
+    "monthlyIncome": 75000,
+    "monthlySpend": 42000,
+    "saving": 33000
+  },
+  "categories": [
+    {
+      "id": "travel",
+      "name": "Travel",
+      "allocated": 15000,
+      "spent": 10600,
+      "color": "#22C55E",
+      "icon": "airplane"
+    },
+    {
+      "id": "food",
+      "name": "Food",
+      "allocated": 12000,
+      "spent": 9000,
+      "color": "#F97316",
+      "icon": "food"
+    },
+    {
+      "id": "rent",
+      "name": "Rent",
+      "allocated": 25000,
+      "spent": 20000,
+      "color": "#60A5FA",
+      "icon": "home-variant"
+    },
+    {
+      "id": "shopping",
+      "name": "Shopping",
+      "allocated": 8000,
+      "spent": 2400,
+      "color": "#A78BFA",
+      "icon": "shopping"
+    }
+  ]
+}
