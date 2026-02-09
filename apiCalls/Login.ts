@@ -7,7 +7,7 @@ export async function login(email :string , password : string){
        
         const res =await axios.post(`${baseURL.nihal}/user/login` , {email , password})
         if(res.status ==200&& res.data){  
-          console.log(res.data)
+          
             // AsyncStorage.setItem("token" , res.data.token)
             return res.data
         }
@@ -22,11 +22,15 @@ export async function login(email :string , password : string){
 export async function signUpUser(email :string , password : string){
     try{
         
+        
         const res =await axios.post(`${baseURL.nihal}/user/signup` , {email , password})
         if(res.status ==200){
-           console.warn("ch",res.data)
+
             // AsyncStorage.setItem("token" , res.data.token)
             return res.data
+        }
+        else if(res.status == 201){
+           return "Email already exists"
         }
         return null
     }

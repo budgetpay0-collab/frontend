@@ -13,6 +13,7 @@ import {
   TextInput,
   Keyboard,
   BackHandler,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -28,6 +29,7 @@ const Login = () => {
   const [pass , setPassword] = useState("")
   const [signUp , setSignUp] = useState(false)
   const [confirm , setConfirm] = useState("")
+  const [buttonLoading, setButtonLoading] = useState(false);
   const setUser = useUserStore((s)=>s.setUser)
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -79,7 +81,7 @@ const Login = () => {
       useNativeDriver: true,
     }).start(() => setShowModal(false));
   };
-    const openSignupModal = () => {
+  const openSignupModal = () => {
     setSignUp(true);
     Animated.spring(slideAnim, {
       toValue: 0,
@@ -98,6 +100,7 @@ const Login = () => {
   };
 
 const handleSignup = async() => {
+  setButtonLoading(true);
   const trimmedEmail = email.trim();
   const trimmedPassword = pass.trim();
   const trimmedConfirmPassword = confirm.trim();
@@ -108,42 +111,55 @@ const handleSignup = async() => {
   // ❌ Email checks
   if (!trimmedEmail) {
     alert("Email is required");
+    setButtonLoading(false);
     return;
   }
 
   if (!emailRegex.test(trimmedEmail)) {
     alert("Please enter a valid email address");
+    setButtonLoading(false);
     return;
   }
 
   // ❌ Password checks
   if (!trimmedPassword) {
     alert("Password is required");
+    setButtonLoading(false);
     return;
   }
 
   if (trimmedPassword.length < 6) {
     alert("Password must be at least 6 characters");
+    setButtonLoading(false);
     return;
   }
 
   // ❌ Confirm password checks
   if (!trimmedConfirmPassword) {
     alert("Confirm password is required");
+    setButtonLoading(false);
     return;
   }
 
   if (trimmedPassword !== trimmedConfirmPassword) {
     alert("Passwords do not match");
+    setButtonLoading(false);
     return;
   }
    const response = await signUpUser(trimmedEmail, trimmedPassword);
-   console.warn(response)
+ 
  if(!response){
    alert("Cannot generate Profile")
+  setButtonLoading(false);
+  return
+  }
+  if(response === "Email already exists"){
+  alert("Email already exists")
+  setButtonLoading(false);
   return
   }
   setUser(response)
+  setButtonLoading(false);
   router.replace("/(tabs)")
   // ✅ All validations passed
   
@@ -152,6 +168,7 @@ const handleSignup = async() => {
 
   const handleLogin = async() => {
   // Trim to avoid spaces
+  setButtonLoading(true);
   const trimmedEmail = email.trim();
   const trimmedPassword = pass.trim();
 
@@ -161,22 +178,26 @@ const handleSignup = async() => {
   // ❌ Email validation
   if (!trimmedEmail) {
     alert("Email is required");
+    setButtonLoading(false);
     return;
   }
 
   if (!emailRegex.test(trimmedEmail)) {
     alert("Please enter a valid email");
+    setButtonLoading(false);
     return;
   }
 
   // ❌ Password validation
   if (!trimmedPassword) {
     alert("Password is required");
+    setButtonLoading(false);
     return;
   }
 
   if (trimmedPassword.length < 6) {
     alert("Password must be at least 6 characters");
+    setButtonLoading(false);
     return;
   }
 
@@ -184,10 +205,12 @@ const handleSignup = async() => {
  const response = await login(trimmedEmail, trimmedPassword);
  
  if(!response){
-  alert("Failed to save data");
+  alert("Credentials are incorrect");
+  setButtonLoading(false);
   return;
  }
  setUser(response)
+ setButtonLoading(false);
  router.replace("/(tabs)")
 };
   return (
@@ -321,7 +344,11 @@ const handleSignup = async() => {
                
               }}
             >
-              <Text style={styles.modalLoginText}>Login</Text>
+              {buttonLoading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.modalLoginText}>Login</Text>
+              )}
             </TouchableOpacity>
           </ScrollView>
         </Animated.View>
@@ -386,7 +413,11 @@ const handleSignup = async() => {
                
               }}
             >
-              <Text style={styles.modalLoginText}>Signup</Text>
+             {buttonLoading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.modalLoginText}>Signup</Text>
+              )}
             </TouchableOpacity>
           </ScrollView>
         </Animated.View>

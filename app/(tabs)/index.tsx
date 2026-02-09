@@ -27,9 +27,9 @@ import { updateUser } from "@/apiCalls/Login";
 
 const Index = () => {
   const [loading, setLoading] = useState(true);
- const userData = useUserStore((s)=>s.user)
-  const setUser = useUserStore((s)=>s.setUser)
- 
+
+  const userData = useUserStore((s) => s.user);
+  const setUser = useUserStore((s) => s.setUser);
 
   /* ================= MODAL STATE ================= */
 
@@ -39,74 +39,77 @@ const Index = () => {
   const [nameInput, setNameInput] = useState("");
   const [incomeInput, setIncomeInput] = useState("");
   const [keyboardOffset, setKeyboardOffset] = useState(0);
-  
-  /* ================= KEYBOARD LISTENERS ================= */
-  useEffect(()=>{
-    if(userData){
-      setLoading(false)
-    }
-  },[userData])
+
+  // 🔒 GUARANTEE MODAL SHOWS ONLY ONCE
+  const hasShownProfileModal = useRef(false);
+
+  /* ================= LOADING ================= */
 
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
+    if (userData) {
+      setLoading(false);
+    }
+  }, [userData]);
+
+  /* ================= KEYBOARD LISTENERS ================= */
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
       Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
-      (e) => {
-        setKeyboardOffset(e.endCoordinates.height);
-      }
+      (e) => setKeyboardOffset(e.endCoordinates.height)
     );
 
-    const keyboardDidHideListener = Keyboard.addListener(
+    const hideSub = Keyboard.addListener(
       Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
-      () => {
-        setKeyboardOffset(0);
-      }
+      () => setKeyboardOffset(0)
     );
 
     return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
+      showSub.remove();
+      hideSub.remove();
     };
   }, []);
- useEffect(() => {
-  if (Platform.OS !== "android") return;
 
-  const backHandler = BackHandler.addEventListener(
-    "hardwareBackPress",
-    () => {
-      BackHandler.exitApp(); // 🚪 exit app
-      return true; // ⛔ prevent default behavior
+  /* ================= ANDROID BACK HANDLER ================= */
+
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        BackHandler.exitApp();
+        return true;
+      }
+    );
+
+    return () => backHandler.remove();
+  }, []);
+
+  /* ================= SHOW MODAL (ONCE) ================= */
+
+  useEffect(() => {
+    if (!userData) return;
+    if (hasShownProfileModal.current) return;
+
+    if (userData.income === 0 || userData.income == null) {
+      hasShownProfileModal.current = true;
+
+      const timer = setTimeout(() => {
+        setNameInput(userData.name ?? "");
+        setShowModal(true);
+
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          damping: 20,
+          stiffness: 120,
+          useNativeDriver: true,
+        }).start();
+      }, 2000);
+
+      return () => clearTimeout(timer);
     }
-  );
-
-  return () => backHandler.remove();
-}, []);
-  /* ================= LOAD USER ================= */
-
-
-  /* ================= SHOW MODAL IF INCOME MISSING ================= */
-
-useEffect(() => {
-  if (!userData) return;
-
-  // only trigger when income is missing AND modal not already shown
-  if ((userData.income === 0 || userData.income == null) && !showModal) {
-    const timer = setTimeout(() => {
-      setNameInput(userData.name ?? "");
-      setShowModal(true);
-
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        damping: 20,
-        stiffness: 120,
-        useNativeDriver: true,
-      }).start();
-    }, 2000); // ⏱️ 2 seconds delay
-
-    // cleanup (very important)
-    return () => clearTimeout(timer);
-  }
-}, [userData, showModal]);
-
+  }, []);
 
   /* ================= SAVE PROFILE ================= */
 
@@ -122,32 +125,29 @@ useEffect(() => {
     }
 
     const updatedUserData = {
-      
       name: nameInput.trim(),
       income: Number(incomeInput),
     };
-    
-    console.warn(userData)
-    // CALL FOR UPDATION API
-    const updatedUser = await updateUser(
-      userData?._id,
-      updatedUserData
-    );
+
+    const updatedUser = await updateUser(userData?._id, updatedUserData);
 
     if (!updatedUser) {
       alert("Failed to save data");
       return;
     }
-    setUser(updatedUser); // ✅ always valid user object
+
+    setUser(updatedUser);
 
     Animated.timing(slideAnim, {
       toValue: 420,
       duration: 260,
       useNativeDriver: true,
-    }).start(() => setShowModal(false));
+    }).start(() => {
+      setShowModal(false);
+    });
   };
 
-  /* ================= LOADING ================= */
+  /* ================= LOADING UI ================= */
 
   if (loading) {
     return (
@@ -169,11 +169,7 @@ useEffect(() => {
   return (
     <View style={styles.screen}>
       <View style={styles.topArea}>
-        <TopHeader
-          name={name}
-          onPressBell={() => console.log("bell")}
-         
-        />
+        <TopHeader name={name} onPressBell={() => {}} />
         <Header />
       </View>
 
@@ -197,14 +193,14 @@ useEffect(() => {
           <FirstGraph
             labels={["Week1", "Week2", "Week3", "Week4"]}
             pointsPerLabel={7}
-            enableWeekFilter={true}
+            enableWeekFilter
           />
 
           <View style={{ height: 900 }} />
         </ScrollView>
       </View>
 
-      {/* ================= MODERN MODAL ================= */}
+      {/* ================= MODAL ================= */}
 
       <Modal visible={showModal} transparent animationType="none">
         <KeyboardAvoidingView
@@ -214,7 +210,7 @@ useEffect(() => {
           <Animated.View
             style={[
               styles.modalCard,
-              { 
+              {
                 transform: [{ translateY: slideAnim }],
                 marginBottom: keyboardOffset,
               },
@@ -309,8 +305,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 40,
   },
-
-  /* ===== MODAL ===== */
 
   modalBackdrop: {
     flex: 1,
