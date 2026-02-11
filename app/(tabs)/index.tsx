@@ -24,6 +24,11 @@ import FirstGraph from "../components/Home/FirstGraph";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useUserStore } from "@/store/userStore";
 import { updateUser } from "@/apiCalls/Login";
+import { PieChart } from "react-native-gifted-charts";
+import PieGraph from "../components/Home/PieGraph";
+import YearGraph from "../components/Home/YearGraph";
+import TopCategories from "../components/Home/TopCategories";
+import HealthOverall from "../components/Home/HealthOverall";
 
 const Index = () => {
   const [loading, setLoading] = useState(true);
@@ -195,8 +200,12 @@ const Index = () => {
             pointsPerLabel={7}
             enableWeekFilter
           />
+          <PieGraph/>
+          <YearGraph/>
+          <TopCategories/>
+          <HealthOverall/>
 
-          <View style={{ height: 900 }} />
+          {/* <View style={{ height: 900 }} /> */}
         </ScrollView>
       </View>
 

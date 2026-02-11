@@ -38,5 +38,26 @@
       "color": "#A78BFA",
       "icon": "shopping"
     }
-  ]
+  ],
+  "yearlyExpenses": {
+    "currency": "INR",
+    "typeLabels": {
+      "dynamic": "Dynamic",
+      "fixed": "Fixed"
+    },
+    "months": [
+      { "month": "Jan", "dynamic": 280, "fixed": 120 },
+      { "month": "Feb", "dynamic": 250, "fixed": 140 },
+      { "month": "Mar", "dynamic": 200, "fixed": 200 },
+      { "month": "Apr", "dynamic": 140, "fixed": 90 },
+      { "month": "May", "dynamic": 160, "fixed": 70 },
+      { "month": "Jun", "dynamic": 240, "fixed": 130 },
+      { "month": "Jul", "dynamic": 210, "fixed": 180 },
+      { "month": "Aug", "dynamic": 90, "fixed": 70 },
+      { "month": "Sep", "dynamic": 150, "fixed": 80 },
+      { "month": "Oct", "dynamic": 80, "fixed": 60 },
+      { "month": "Nov", "dynamic": 160, "fixed": 70 },
+      { "month": "Dec", "dynamic": 260, "fixed": 120 }
+    ]
+  }
 }
