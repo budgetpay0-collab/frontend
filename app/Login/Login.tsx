@@ -442,18 +442,20 @@ const styles = StyleSheet.create({
   },
 
   modalContainer: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#0F0F0F",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
     maxHeight: "80%",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
   },
 
   dragIndicator: {
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#DDD",
+    backgroundColor: "rgba(255,255,255,0.35)",
     alignSelf: "center",
     marginBottom: 12,
   },
@@ -461,23 +463,27 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 22,
     fontFamily: "Poppins-SemiBold",
-    color: "#111",
+    color: "#FFFFFF",
   },
 
   modalSubtitle: {
     fontSize: 14,
-    color: "#666",
+    fontFamily: "Poppins-Regular",
+    color: "rgba(255,255,255,0.7)",
     marginBottom: 20,
   },
 
   input: {
     height: 50,
     borderRadius: 12,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#181818",
     paddingHorizontal: 16,
     marginBottom: 12,
     fontSize: 15,
-    color : 'black'
+    fontFamily: "Poppins-Regular",
+    color: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
   },
 
   modalLoginBtn: {

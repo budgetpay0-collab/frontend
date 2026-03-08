@@ -1,10 +1,10 @@
-// FirstGraph.tsx
 import React, { useMemo } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
 
 const GREEN = "#28F07B";
 const BG = "#0B0B0B";
+const screenWidth = Dimensions.get("window").width;
 
 const FirstGraph = ({
   transactions,
@@ -20,7 +20,6 @@ const FirstGraph = ({
 
     const today = new Date();
 
-    // Start of week (Sunday)
     const startOfWeek = new Date(today);
     startOfWeek.setDate(today.getDate() - today.getDay());
 
@@ -32,14 +31,12 @@ const FirstGraph = ({
       days.push(d);
     }
 
-    // Initialize totals
     const totals: Record<string, number> = {};
 
     days.forEach((d) => {
       totals[d.toDateString()] = 0;
     });
 
-    // Aggregate transactions
     transactions.forEach((t) => {
       const d = new Date(t.createdAt);
       const key = d.toDateString();
@@ -75,16 +72,15 @@ const FirstGraph = ({
   return (
     <View style={styles.wrap}>
       <View style={styles.card}>
-        {/* Title */}
         <View style={styles.titlePill}>
           <Text style={styles.titleText}>Spending Trends</Text>
         </View>
 
-        {/* Chart */}
         <View style={styles.chartWrap}>
           <LineChart
             data={chartData}
-            height={170}
+            width={screenWidth - 56}
+            height={190}
             thickness={2.2}
             color={GREEN}
             maxValue={maxValue}
@@ -94,18 +90,19 @@ const FirstGraph = ({
             xAxisColor="rgba(255,255,255,0.75)"
             yAxisTextStyle={styles.yAxisText}
             yAxisLabelPrefix="₹"
-            yAxisLabelWidth={42}
+            yAxisLabelWidth={34}
             xAxisLabelTextStyle={styles.xAxisText}
             xAxisLabelsVerticalShift={6}
             rulesType="dashed"
             rulesColor="rgba(255,255,255,0.18)"
             rulesThickness={1}
             noOfSections={5}
-            initialSpacing={10}
-            spacing={40}
+            initialSpacing={0}
+            endSpacing={0}
+            spacing={(screenWidth - 56 - 34) / 6}
             hideDataPoints
             pointerConfig={{
-              pointerStripHeight: 140,
+              pointerStripHeight: 150,
               pointerStripWidth: 1.2,
               pointerStripColor: "rgba(40,240,123,0.6)",
               pointerColor: "#FFFFFF",
@@ -115,7 +112,6 @@ const FirstGraph = ({
               activatePointersInstantlyOnTouch: true,
               activatePointersDelay: 0,
               autoAdjustPointerLabelPosition: true,
-
               pointerLabelComponent: (
                 items: any[],
                 _secondary: any,
@@ -149,7 +145,6 @@ const FirstGraph = ({
           />
         </View>
 
-        {/* Week labels */}
         <View style={styles.weekRow}>
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((l, i) => (
             <TouchableOpacity key={i} style={styles.weekPill}>
@@ -165,7 +160,9 @@ const FirstGraph = ({
 export default FirstGraph;
 
 const styles = StyleSheet.create({
-  wrap: { width: "100%" },
+  wrap: {
+    width: "100%",
+  },
 
   card: {
     width: "100%",
@@ -173,7 +170,8 @@ const styles = StyleSheet.create({
     backgroundColor: BG,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.18)",
-    padding: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
   },
 
   titlePill: {
@@ -183,6 +181,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 10,
     marginBottom: 8,
+    marginLeft: 4,
   },
 
   titleText: {
@@ -192,9 +191,11 @@ const styles = StyleSheet.create({
   },
 
   chartWrap: {
+    width: "100%",
     borderRadius: 14,
     paddingTop: 4,
-    paddingBottom: 12, // prevents label clipping
+    paddingBottom: 14,
+    overflow: "hidden",
   },
 
   yAxisText: {
@@ -213,6 +214,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 10,
+    gap: 4,
   },
 
   weekPill: {

@@ -8,33 +8,29 @@ const clamp = (n: number, min: number, max: number) =>
   Math.max(min, Math.min(max, n));
 
 const MONTHS = [
-  "Jan","Feb","Mar","Apr","May","Jun",
-  "Jul","Aug","Sep","Oct","Nov","Dec"
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
 const YearGraph = ({ transactions }: { transactions: any[] }) => {
-
   const defaultIndex = new Date().getMonth();
   const [selectedIndex, setSelectedIndex] = useState(defaultIndex);
   const [tipSize, setTipSize] = useState({ w: 200, h: 86 });
 
   const { width: screenW } = useWindowDimensions();
 
-  const yAxisLabelWidth = 44;
-  const cardPaddingH = 12 * 2;
+  const yAxisLabelWidth = 34;
+  const cardOuterPadding = 8 * 2;
+  const chartInnerPadding = 2;
 
   const availableChartWidth = useMemo(() => {
-    return Math.max(240, screenW - cardPaddingH - yAxisLabelWidth - 18);
+    return Math.max(
+      250,
+      screenW - cardOuterPadding - yAxisLabelWidth - chartInnerPadding - 10
+    );
   }, [screenW]);
 
-  /**
-   * =============================
-   * BUILD MONTH DATA FROM TXNS
-   * =============================
-   */
-
   const monthsData = useMemo(() => {
-
     const months = MONTHS.map((m) => ({
       month: m,
       values: [] as number[],
@@ -47,7 +43,6 @@ const YearGraph = ({ transactions }: { transactions: any[] }) => {
       const date = new Date(t.createdAt);
       const m = date.getMonth();
       const amt = Number(t.amount) || 0;
-
       months[m].values.push(amt);
     });
 
@@ -64,42 +59,40 @@ const YearGraph = ({ transactions }: { transactions: any[] }) => {
     });
 
     return months;
-
   }, [transactions]);
 
   const count = monthsData.length;
 
-  /**
-   * =============================
-   * BAR WIDTH CALCULATION
-   * =============================
-   */
-
   const { barWidth, spacing } = useMemo(() => {
+    if (count <= 1) {
+      return { barWidth: 14, spacing: 0 };
+    }
 
-    const denom = count + 0.9 * (count - 1);
-    let bw = availableChartWidth / denom;
+    let spacing = 3;
+    let barWidth = (availableChartWidth - spacing * (count - 1)) / count;
 
-    bw = clamp(bw, 6, 14);
+    if (barWidth > 14) {
+      barWidth = 14;
+      spacing = (availableChartWidth - barWidth * count) / (count - 1);
+    }
 
-    const sp = clamp(0.9 * bw, 6, 16);
+    if (barWidth < 5) {
+      barWidth = 5;
+      spacing = (availableChartWidth - barWidth * count) / (count - 1);
+    }
 
-    return { barWidth: bw, spacing: sp };
+    spacing = Math.max(1, spacing);
 
+    return {
+      barWidth: clamp(barWidth, 5, 14),
+      spacing,
+    };
   }, [availableChartWidth, count]);
 
   const chartHeight = 220;
 
-  /**
-   * =============================
-   * CHART DATA
-   * =============================
-   */
-
   const chartData = useMemo(() => {
-
     return monthsData.map((m, idx) => {
-
       const isZero = m.total === 0;
 
       const fakeValue = isZero
@@ -119,41 +112,20 @@ const YearGraph = ({ transactions }: { transactions: any[] }) => {
           : "#E5E7EB",
       };
     });
-
   }, [monthsData, selectedIndex]);
 
-  /**
-   * =============================
-   * DYNAMIC Y AXIS
-   * =============================
-   */
-
   const maxValue = useMemo(() => {
-
     const max = monthsData.reduce((m, it) => Math.max(m, it.total), 0);
-
     if (max === 0) return 500;
-
-    const rounded = Math.ceil(max / 100) * 100;
-
-    return rounded;
-
+    return Math.ceil(max / 100) * 100;
   }, [monthsData]);
 
   const selected = chartData[selectedIndex] || null;
 
-  /**
-   * =============================
-   * TOOLTIP POSITION
-   * =============================
-   */
-
   const tooltipPos = useMemo(() => {
-
     if (!selected) return { left: 0, top: 0 };
 
     const block = barWidth + spacing;
-
     const barCenterX =
       yAxisLabelWidth + barWidth / 2 + selectedIndex * block;
 
@@ -171,7 +143,6 @@ const YearGraph = ({ transactions }: { transactions: any[] }) => {
     top = clamp(top, 6, chartHeight - tipSize.h - 6);
 
     return { left, top };
-
   }, [
     selected,
     selectedIndex,
@@ -208,10 +179,12 @@ const YearGraph = ({ transactions }: { transactions: any[] }) => {
       </View>
 
       <View style={styles.chartArea}>
-
         {selected && (
           <View
-            style={[styles.tipContainer, { left: tooltipPos.left, top: tooltipPos.top }]}
+            style={[
+              styles.tipContainer,
+              { left: tooltipPos.left, top: tooltipPos.top },
+            ]}
             onLayout={(e) => {
               const { width, height } = e.nativeEvent.layout;
               setTipSize({ w: width, h: height });
@@ -239,8 +212,11 @@ const YearGraph = ({ transactions }: { transactions: any[] }) => {
           <BarChart
             data={chartData}
             height={chartHeight}
+            width={availableChartWidth}
             barWidth={barWidth}
             spacing={spacing}
+            initialSpacing={0}
+            endSpacing={0}
             roundedTop
             roundedBottom
             yAxisLabelPrefix="₹"
@@ -256,7 +232,7 @@ const YearGraph = ({ transactions }: { transactions: any[] }) => {
             xAxisThickness={1}
             yAxisThickness={1}
             disableScroll
-            width={availableChartWidth}
+            labelsExtraHeight={8}
             onPress={(item: any, index: number) => setSelectedIndex(index)}
           />
         </View>
@@ -280,9 +256,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     elevation: 8,
     alignSelf: "stretch",
-    // paddingBottom: 16,
-    marginVertical:15,
+    marginVertical: 15,
   },
+
   topHighlight: {
     position: "absolute",
     left: 0,
@@ -290,6 +266,7 @@ const styles = StyleSheet.create({
     top: 0,
     height: 10,
   },
+
   bottomShadow: {
     position: "absolute",
     left: 0,
@@ -301,12 +278,13 @@ const styles = StyleSheet.create({
   titlePill: {
     alignSelf: "flex-start",
     marginTop: 12,
-    marginLeft: 12,
+    marginLeft: 10,
     backgroundColor: "#fff",
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
+
   titlePillText: {
     color: "#000",
     fontSize: 13,
@@ -315,40 +293,43 @@ const styles = StyleSheet.create({
 
   chartArea: {
     marginTop: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     position: "relative",
   },
-chartWrap: {
-  marginTop: 10,
-//   paddingHorizontal: 12,
-  paddingBottom: 18, // ✅ gives room for "Jan Feb..." labels
-  position: "relative",
-  overflow: "hidden", // ✅ important
-},
+
+  chartWrap: {
+    marginTop: 10,
+    paddingBottom: 18,
+    position: "relative",
+    overflow: "hidden",
+    width: "100%",
+  },
+
   yAxisText: {
     color: "rgba(255,255,255,0.85)",
     fontSize: 12,
     fontFamily: "Poppins-Medium",
   },
+
   xAxisText: {
     color: "rgba(255,255,255,0.85)",
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: "Poppins-Medium",
-    // marginTop: 6,
   },
 
-  // ✅ Tooltip styles (like screenshot)
   tipContainer: {
     position: "absolute",
     zIndex: 50,
     alignItems: "center",
   },
+
   tipMonth: {
     color: "#22C55E",
     fontSize: 16,
     fontFamily: "Poppins-SemiBold",
     marginBottom: 6,
   },
+
   tipBox: {
     backgroundColor: "rgba(0,0,0,0.78)",
     borderRadius: 12,
@@ -358,11 +339,13 @@ chartWrap: {
     borderColor: "rgba(255,255,255,0.45)",
     minWidth: 170,
   },
+
   tipLine: {
     color: "rgba(255,255,255,0.92)",
     fontSize: 14,
     fontFamily: "Poppins-Medium",
   },
+
   tipValue: {
     fontFamily: "Poppins-SemiBold",
   },

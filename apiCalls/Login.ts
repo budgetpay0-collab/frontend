@@ -12,7 +12,7 @@ export async function login(email :string , password : string){
             return res.data
         }
         return null
-    }
+  }
     catch(err){
         console.warn(err)
         return null
