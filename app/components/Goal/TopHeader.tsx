@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: "#FFFFFF",
-    fontSize: 20,
+    fontSize: 18,
     // fontWeight: "800",
     fontFamily: "Poppins-SemiBold",
     letterSpacing: 0.2,
@@ -56,8 +56,8 @@ const styles = StyleSheet.create({
   subTitle: {
     // marginTop: 4,
     color: "rgba(255,255,255,0.75)",
-    marginTop: -8,
-    fontSize: 12.5,
+    marginTop: -6,
+    fontSize: 11.5,
     // fontWeight: "500",
     fontFamily: "Poppins-Regular",
   },

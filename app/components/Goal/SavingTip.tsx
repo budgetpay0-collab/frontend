@@ -70,7 +70,7 @@ const SavingTip: React.FC<Props> = ({ tips }) => {
                 <Text style={styles.title}>{item.title}</Text>
                 <Ionicons
                   name={isOpen ? "chevron-up" : "chevron-down"}
-                  size={22}
+                  size={18}
                   color="rgba(255,255,255,0.85)"
                 />
               </Pressable>
@@ -115,14 +115,14 @@ const styles = StyleSheet.create({
     marginTop: 25,
   },
   icon: {
-  width: 20,
-  height: 20,
+  width: 17,
+  height: 17,
   resizeMode: "contain",
 },
 
   headerText: {
     color: "#2FE67A",
-    fontSize: 20,
+    fontSize: 16,
     fontFamily: "Poppins-SemiBold",
   },
 
@@ -148,13 +148,13 @@ const styles = StyleSheet.create({
 
   title: {
     color: "#FFFFFF",
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: "Poppins-Medium",
   },
 
   body: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingBottom: 14,
     borderTopWidth: 1,
     borderTopColor: "rgba(255,255,255,0.10)",
   },

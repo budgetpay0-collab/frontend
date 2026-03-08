@@ -26,8 +26,8 @@ const MonthlyGoal: React.FC<Props> = ({
   }, [current, target, percentOverride]);
 
   // Ring config
-  const SIZE = 220;
-  const STROKE = 22;
+  const SIZE = 200;
+  const STROKE = 20;
   const R = (SIZE - STROKE) / 2;
   const C = 2 * Math.PI * R;
 
@@ -37,7 +37,7 @@ const MonthlyGoal: React.FC<Props> = ({
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <Ionicons name="radio-outline" size={22} color="#fff" />
+        <Ionicons name="radio-outline" size={19} color="#fff" />
         <Text style={styles.headerText}>{title}</Text>
       </View>
 
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   },
   headerText: {
     color: "#FFFFFF",
-    fontSize: 18,
+    fontSize: 15,
     // fontWeight: "800",
     fontFamily: "Poppins-Medium",
   },
@@ -129,14 +129,14 @@ const styles = StyleSheet.create({
   },
   percentText: {
     color: "#FFFFFF",
-    fontSize: 52,
+    fontSize: 42,
     fontFamily: "OpenSans-Bold",
   },
   goalTitle: {
-    // marginTop: 6,
+    // marginTop: 6
     textAlign: "center",
     color: "#FFFFFF",
-    fontSize: 40,
+    fontSize: 30,
     // fontWeight: "900",
     fontFamily: "Poppins-Medium",
   },
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     marginTop: -15,
     textAlign: "center",
     color: "rgba(255,255,255,0.9)",
-    fontSize: 20,
+    fontSize: 17,
     // fontWeight: "700",
     fontFamily: "Poppins-SemiBold",
   },

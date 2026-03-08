@@ -80,7 +80,7 @@ const SearchNdFilter: React.FC<Props> = ({
           onPress={onPressCategory ?? (() => setOpenCategory(true))}
         >
           <Text style={styles.pillText}>{categoryLabel}</Text>
-          <Ionicons name="chevron-down" size={18} color="#FFFFFF" />
+          <Ionicons name="chevron-down" size={14} color="#FFFFFF" />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -88,9 +88,9 @@ const SearchNdFilter: React.FC<Props> = ({
           style={styles.pill}
           onPress={onPressFilters ?? (() => setOpenFilters(true))}
         >
-          <Feather name="filter" size={16} color="#FFFFFF" />
-          <Text style={[styles.pillText, { marginLeft: 8 }]}>FILTERS</Text>
-          <Ionicons name="chevron-down" size={18} color="#FFFFFF" />
+          <Feather name="filter" size={14} color="#FFFFFF" />
+          <Text style={[styles.pillText]}>FILTERS</Text>
+          <Ionicons name="chevron-down" size={14} color="#FFFFFF" />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -98,9 +98,9 @@ const SearchNdFilter: React.FC<Props> = ({
           style={styles.pill}
           onPress={onPressSort ?? (() => setOpenSort(true))}
         >
-          <Feather name="sliders" size={16} color="#FFFFFF" />
-          <Text style={[styles.pillText, { marginLeft: 8 }]}>SORT</Text>
-          <Ionicons name="chevron-down" size={18} color="#FFFFFF" />
+          <Feather name="sliders" size={14} color="#FFFFFF" />
+          <Text style={[styles.pillText]}>SORT</Text>
+          <Ionicons name="chevron-down" size={14} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
@@ -210,7 +210,7 @@ fakePlaceholder: {
   left: 0,
   right: 0,
   color: "rgba(255,255,255,0.35)",
-  fontSize: 14,
+  fontSize: 12,
   fontWeight: "700",
   fontFamily: "Poppins-Regular", // ✅ placeholder font here
 },
@@ -231,7 +231,7 @@ fakePlaceholder: {
 
   pill: {
     flex: 1,
-    height: 40,
+    height: 35,
     borderRadius: 20,
     borderWidth: 1.2,
     borderColor: BORDER,
@@ -244,8 +244,9 @@ fakePlaceholder: {
 
   pillText: {
     color: "#FFFFFF",
-    fontSize: 13,
-    fontWeight: "800",
+    fontSize: 10,
+    // fontWeight: "800",
+    fontFamily:'OpenSans-SemiBold',
   },
 });
 

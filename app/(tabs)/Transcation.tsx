@@ -186,7 +186,7 @@ const Transcation = () => {
             ListHeaderComponent={
               <>
                 <TopHeadder />
-                <Header />
+                {/* <Header /> */}
                 <SearchNdFilter />
 
                 <TransactionSummary

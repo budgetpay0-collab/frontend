@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
 
   value: {
     marginTop: 5,
-    fontSize: 15,
+    fontSize: 13,
     fontFamily: "Poppins-SemiBold",
   },
 

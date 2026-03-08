@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity,BackHandler } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -9,7 +9,7 @@ import { useRouter } from "expo-router";
 type Props = {
   name?: string;
   onPressBell?: () => void;
-  onPressProfile?: () => void; // optional override
+  onPressProfile?: () => void;
 };
 
 const TopHeader: React.FC<Props> = ({
@@ -19,12 +19,19 @@ const TopHeader: React.FC<Props> = ({
 }) => {
   const router = useRouter();
 
-  const handleProfilePress = () => {
-  if (onPressProfile) return onPressProfile();
+  const handleBellPress = () => {
+    if (onPressBell) return onPressBell();
 
-  console.log("Profile pressed ✅");
-  router.push({ pathname: "/pages/Profile" });
-};
+    console.log("Bell pressed ✅");
+    router.push({ pathname: "/pages/Notification" });
+  };
+
+  const handleProfilePress = () => {
+    if (onPressProfile) return onPressProfile();
+
+    console.log("Profile pressed ✅");
+    router.push({ pathname: "/pages/Profile" });
+  };
 
   return (
     <LinearGradient
@@ -35,17 +42,15 @@ const TopHeader: React.FC<Props> = ({
     >
       <SafeAreaView edges={["top"]} style={styles.safe}>
         <View style={styles.row}>
-          {/* Left Text */}
           <View style={styles.left}>
             <Text style={styles.hello}>Hello,</Text>
             <Text style={styles.name}>{name}</Text>
           </View>
 
-          {/* Right Icons */}
           <View style={styles.right}>
             <TouchableOpacity
               activeOpacity={0.85}
-              onPress={onPressBell}
+              onPress={handleBellPress}
               style={styles.iconBtn}
             >
               <Octicons name="bell-fill" size={26} color="white" />

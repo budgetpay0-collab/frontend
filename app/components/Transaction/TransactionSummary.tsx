@@ -89,13 +89,13 @@ const styles = StyleSheet.create({
   },
   title: {
     color: "#FFFFFF",
-    fontSize: 18,
+    fontSize: 14,
     fontFamily: "Poppins-SemiBold",
     marginBottom: 12,
   },
   list: { gap: 12 },
   row: {
-    height: 56,
+    height: 50,
     borderRadius: 12,
     paddingHorizontal: 14,
     flexDirection: "row",
@@ -106,11 +106,11 @@ const styles = StyleSheet.create({
     borderColor: "rgba(0,0,0,0.06)",
   },
   rowLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: "Poppins-Medium",
   },
   rowValue: {
-    fontSize: 22,
+    fontSize: 16,
     fontFamily: "Poppins-SemiBold",
   },
 });

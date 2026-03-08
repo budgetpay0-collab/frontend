@@ -30,7 +30,7 @@ const baseURLValue = baseURL.nihal;
 const COLORS = [
   "#60A5FA",
   "#F87171",
-  "#34D399",
+  "#28F07B",
   "#FBBF24",
   "#A78BFA",
   "#F472B6",

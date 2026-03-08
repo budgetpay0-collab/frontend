@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     paddingRight: 12,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     lineHeight: 30,
     // fontWeight: "800",
     fontFamily:'Poppins-SemiBold',

@@ -57,7 +57,6 @@ const TransactionList: React.FC<Props> = ({
             <Text style={styles.date}>{formattedDate}</Text>
           ) : null}
 
-          {/* Action Buttons */}
           <View style={styles.actionRow}>
             <TouchableOpacity
               onPress={() => onEdit(item)}
@@ -129,10 +128,9 @@ const TransactionList: React.FC<Props> = ({
 
 export default TransactionList;
 
-/* ================= STYLES ================= */
-
 const styles = StyleSheet.create({
   card: {
+    marginTop: 10,
     borderRadius: 18,
     paddingHorizontal: 18,
     marginHorizontal: 14,
@@ -145,9 +143,9 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    color: "rgba(255,255,255,0.92)",
-    fontSize: 18,
-    fontWeight: "700",
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontFamily: "Poppins-SemiBold",
     marginBottom: 10,
   },
 
@@ -171,15 +169,16 @@ const styles = StyleSheet.create({
 
   subtitle: {
     color: "rgba(255,255,255,0.86)",
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 14,
+    fontFamily: "Poppins-Medium",
     marginBottom: 6,
     textAlign: "center",
   },
 
   helper: {
     color: "rgba(255,255,255,0.55)",
-    fontSize: 13,
+    fontSize: 12,
+    fontFamily: "Poppins-Regular",
     textAlign: "center",
     lineHeight: 18,
   },
@@ -209,12 +208,13 @@ const styles = StyleSheet.create({
   rowTitle: {
     color: "rgba(255,255,255,0.9)",
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: "Poppins-Medium",
   },
 
   rowSub: {
     color: "rgba(255,255,255,0.55)",
     fontSize: 12,
+    fontFamily: "Poppins-Regular",
     marginTop: 2,
   },
 
@@ -223,15 +223,16 @@ const styles = StyleSheet.create({
   },
 
   amount: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: "white",
+    fontSize: 16,
+    fontFamily: "Poppins-SemiBold",
+    color: "#FFFFFF",
   },
 
   date: {
     marginTop: 2,
     color: "rgba(255,255,255,0.45)",
-    fontSize: 11,
+    fontSize: 12,
+    fontFamily: "Poppins-Regular",
   },
 
   actionRow: {
