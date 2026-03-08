@@ -29,15 +29,37 @@ import PieGraph from "../components/Home/PieGraph";
 import YearGraph from "../components/Home/YearGraph";
 import TopCategories from "../components/Home/TopCategories";
 import HealthOverall from "../components/Home/HealthOverall";
+import { fetchTransactions } from "@/apiCalls/Transactions/fetchTransactions";
+import { baseURL } from "@/store/baseURL";
 
 const Index = () => {
   const [loading, setLoading] = useState(true);
-
+  const [monthlySpent , setMonthlySpent] = useState(0); 
   const userData = useUserStore((s) => s.user);
   const setUser = useUserStore((s) => s.setUser);
+  const [transactions, setTransactions] = useState([]);
+  const hydration  = useUserStore((s)=>s.hydration)
+  useEffect(() => {
+     async function getTransactions() {
+      if (!userData) return;
+      const fetchedTransactions = await fetchTransactions(userData._id, baseURL.nihal);
+      setTransactions(fetchedTransactions || []);
+      const totalAmount = fetchedTransactions?.reduce((sum :any, item : any) => sum + item.amount, 0) || 0;
+      setMonthlySpent(totalAmount);
+      const updatedUserData = {
+      monthlySpend : totalAmount
+    };
+    const updatedUser = await updateUser(userData?._id, updatedUserData);
+    if (updatedUser) {
+      setUser(updatedUser);
+    }
+    }
 
+    getTransactions();
+    setLoading(false);
+  },[hydration]);
   /* ================= MODAL STATE ================= */
-
+  
   const [showModal, setShowModal] = useState(false);
   const slideAnim = useRef(new Animated.Value(420)).current;
 
@@ -50,11 +72,7 @@ const Index = () => {
 
   /* ================= LOADING ================= */
 
-  useEffect(() => {
-    if (userData) {
-      setLoading(false);
-    }
-  }, [userData]);
+
 
   /* ================= KEYBOARD LISTENERS ================= */
 
@@ -177,24 +195,21 @@ const Index = () => {
         <TopHeader name={name} onPressBell={() => {}} />
         <Header />
       </View>
-
       <View style={styles.bottomSheet}>
         <View style={styles.handleWrap}>
           <View style={styles.handle} />
         </View>
-
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
           <GlassEffectBoxes
             monthlyIncome={monthlyIncome}
-            monthlySpend={monthlySpend}
+            monthlySpend={monthlySpent}
             saving={saving}
           />
-
           <StreakBox />
-
+        <View style ={{marginBottom : 20}}></View>
           <FirstGraph
             labels={["Week1", "Week2", "Week3", "Week4"]}
             pointsPerLabel={7}

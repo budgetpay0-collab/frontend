@@ -138,7 +138,6 @@ const Profile = () => {
       minute: "2-digit",
     }).format(date);
   };
-
   /* ================= ACTIONS ================= */
   const onSaveProfile = () => {
     if (!user) return;
@@ -151,7 +150,6 @@ const Profile = () => {
       Alert.alert("Error", "Email cannot be empty");
       return;
     }
-
     setUser({
       ...user,
       name,
@@ -317,7 +315,7 @@ const Profile = () => {
                 </View>
 
                 {/* Monthly Spend */}
-                <View
+                {/* <View
                   onLayout={(e) => (monthlySpendInputY.current = e.nativeEvent.layout.y)}
                   style={styles.inputGroup}
                 >
@@ -334,7 +332,7 @@ const Profile = () => {
                       onFocus={() => scrollToInput(monthlySpendInputY.current)}
                     />
                   </View>
-                </View>
+                </View> */}
               </View>
             </ScrollView>
 

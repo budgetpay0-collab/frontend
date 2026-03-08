@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Pressable, Alert } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
 type CategoryItem = {
@@ -7,18 +7,22 @@ type CategoryItem = {
   name: string;
   allocated: number;
   spent: number;
-  color: string; // border + progress color
+  color: string;
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
 };
 
 type Props = {
   title?: string;
   categories?: CategoryItem[];
+  onDelete?: (name: string) => void;
+  onEdit?: (name: string) => void;
 };
 
 const formatINR = (n: number) => {
   try {
-    return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n);
+    return new Intl.NumberFormat("en-IN", {
+      maximumFractionDigits: 0,
+    }).format(n);
   } catch {
     return String(Math.round(n));
   }
@@ -27,6 +31,8 @@ const formatINR = (n: number) => {
 const DynamicCategory: React.FC<Props> = ({
   title = "Dynamic Categories",
   categories = [],
+  onDelete,
+  onEdit,
 }) => {
   const computed = useMemo(() => {
     return categories.map((c) => {
@@ -38,6 +44,21 @@ const DynamicCategory: React.FC<Props> = ({
   }, [categories]);
 
   const hasData = computed.length > 0;
+
+  const handleDelete = (name: string) => {
+    Alert.alert(
+      "Delete Category",
+      "Are you sure you want to delete this category?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => onDelete && onDelete(name),
+        },
+      ]
+    );
+  };
 
   return (
     <View style={styles.wrapper}>
@@ -57,53 +78,58 @@ const DynamicCategory: React.FC<Props> = ({
           <Text style={styles.emptySubtitle}>
             Create a category to track allocated vs spent and stay on budget.
           </Text>
-
-          {/* little decorative chips */}
-          <View style={styles.chipsRow}>
-            <View style={styles.chip}>
-              <MaterialCommunityIcons
-                name="chart-donut"
-                size={14}
-                color="rgba(255,255,255,0.8)"
-              />
-              <Text style={styles.chipText}>Track</Text>
-            </View>
-
-            <View style={styles.chip}>
-              <MaterialCommunityIcons
-                name="wallet-outline"
-                size={14}
-                color="rgba(255,255,255,0.8)"
-              />
-              <Text style={styles.chipText}>Budget</Text>
-            </View>
-
-            <View style={styles.chip}>
-              <MaterialCommunityIcons
-                name="check-decagram-outline"
-                size={14}
-                color="rgba(255,255,255,0.8)"
-              />
-              <Text style={styles.chipText}>Control</Text>
-            </View>
-          </View>
         </View>
       ) : (
         computed.map((c) => (
           <View key={c.id} style={[styles.card, { borderColor: c.color }]}>
-            {/* Header row */}
+            {/* Header */}
             <View style={styles.cardTop}>
               <View style={styles.leftHead}>
-                <MaterialCommunityIcons name={c.icon} size={18} color={c.color} />
-                <Text style={[styles.catName, { color: c.color }]}>{c.name}</Text>
+                <MaterialCommunityIcons
+                  name={c.icon}
+                  size={18}
+                  color={c.color}
+                />
+                <Text style={[styles.catName, { color: c.color }]}>
+                  {c.name}
+                </Text>
                 <Text style={styles.sep}>—</Text>
                 <Text style={[styles.pctText, { color: c.color }]}>
                   {Math.round(c.pct)}%
                 </Text>
               </View>
+
+              {/* 🔥 ACTION BUTTONS */}
+              <View style={styles.actionsRow}>
+                {onEdit && (
+                  <Pressable
+                    onPress={() => onEdit(c.name)}
+                    style={styles.iconBtn}
+                  >
+                    <MaterialCommunityIcons
+                      name="pencil-outline"
+                      size={18}
+                      color="rgba(255,255,255,0.85)"
+                    />
+                  </Pressable>
+                )}
+
+                {onDelete && (
+                  <Pressable
+                    onPress={() => handleDelete(c.name)}
+                    style={styles.iconBtn}
+                  >
+                    <MaterialCommunityIcons
+                      name="delete-outline"
+                      size={18}
+                      color="#EF4444"
+                    />
+                  </Pressable>
+                )}
+              </View>
             </View>
 
-            {/* Progress bar */}
+            {/* Progress */}
             <View style={styles.progressTrack}>
               <View
                 style={[
@@ -113,16 +139,20 @@ const DynamicCategory: React.FC<Props> = ({
               />
             </View>
 
-            {/* Bottom stats */}
+            {/* Stats */}
             <View style={styles.statsRow}>
               <View style={styles.statCol}>
                 <Text style={styles.statLabel}>Allocated</Text>
-                <Text style={styles.statValue}>₹{formatINR(c.allocated)}</Text>
+                <Text style={styles.statValue}>
+                  ₹{formatINR(c.allocated)}
+                </Text>
               </View>
 
               <View style={styles.statColCenter}>
                 <Text style={styles.statLabel}>Spent</Text>
-                <Text style={styles.statValue}>₹{formatINR(c.spent)}</Text>
+                <Text style={styles.statValue}>
+                  ₹{formatINR(c.spent)}
+                </Text>
               </View>
 
               <View style={styles.statColRight}>
@@ -140,6 +170,8 @@ const DynamicCategory: React.FC<Props> = ({
 };
 
 export default DynamicCategory;
+
+/* ================= STYLES ================= */
 
 const styles = StyleSheet.create({
   wrapper: {
@@ -172,6 +204,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+  },
+
+  actionsRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+
+  iconBtn: {
+    padding: 6,
   },
 
   catName: {
@@ -230,7 +271,6 @@ const styles = StyleSheet.create({
     color: "#22C55E",
   },
 
-  // ✅ Empty State
   emptyCard: {
     borderWidth: 1.2,
     borderColor: "rgba(255,255,255,0.14)",
@@ -264,30 +304,5 @@ const styles = StyleSheet.create({
     fontSize: 12.8,
     fontFamily: "Poppins-Medium",
     lineHeight: 18,
-    marginBottom: 12,
-  },
-
-  chipsRow: {
-    flexDirection: "row",
-    gap: 10,
-    flexWrap: "wrap",
-  },
-
-  chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.10)",
-  },
-
-  chipText: {
-    color: "rgba(255,255,255,0.85)",
-    fontSize: 12.5,
-    fontFamily: "Poppins-Medium",
   },
 });

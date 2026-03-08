@@ -13,7 +13,7 @@ type Props = {
 };
 
 const StreakBox: React.FC<Props> = ({
-  streakDays = 3,
+  streakDays = 2,
   daysRow = [3, 4, 5, 6, 7],
   subtitle = "Track your daily expenses logging\nand unlock smart guidance",
   unlocked = false,

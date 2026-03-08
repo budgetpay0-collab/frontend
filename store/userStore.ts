@@ -13,7 +13,8 @@ export interface User {
   lastLoginAt?: Date;
   income: number;
   monthlySpend: number;
-  _id :any
+  _id :any;
+  
 }
 
 /* ================= STORE ================= */
@@ -24,6 +25,8 @@ interface UserStore {
   setUser: (user: User) => void;
   updateUser: (data: Partial<User>) => void;
   clearUser: () => void;
+  hydration : boolean;
+  setHydration : (props :boolean)=>void
 }
 
 /* ================= IMPLEMENTATION ================= */
@@ -50,6 +53,9 @@ export const useUserStore = create<UserStore>()(
         set({
           user: null,
         }),
+        hydration : false,
+        setHydration : (props : boolean) =>set({hydration : props})
+
     }),
     {
       name: "user-storage", // AsyncStorage key
