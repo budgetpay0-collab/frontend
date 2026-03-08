@@ -29,6 +29,7 @@ import TopCategories from "../components/Home/TopCategories";
 import HealthOverall from "../components/Home/HealthOverall";
 import { fetchTransactions } from "@/apiCalls/Transactions/fetchTransactions";
 import { baseURL } from "@/store/baseURL";
+import { useCategoryStore } from "@/store/categoryStore";
 
 const Index = () => {
   const [loading, setLoading] = useState(true);
@@ -36,8 +37,8 @@ const Index = () => {
   const userData = useUserStore((s) => s.user);
   const setUser = useUserStore((s) => s.setUser);
   const [transactions, setTransactions] = useState([]);
-  const hydration = useUserStore((s) => s.hydration);
-
+  const hydration  = useUserStore((s)=>s.hydration)
+  const fetchCategories = useCategoryStore((s) => s.fetchCategories);
   useEffect(() => {
     async function getTransactions() {
       if (!userData) return;
@@ -52,10 +53,13 @@ const Index = () => {
     }
     getTransactions();
     setLoading(false);
-  }, [hydration]);
-
-  /* ================= PROFILE MODAL STATE ================= */
-
+  },[hydration]);
+  /* ================= MODAL STATE ================= */
+  useEffect(() => {
+    if(userData?._id){
+      fetchCategories(userData?._id);
+    }
+  },[])
   const [showModal, setShowModal] = useState(false);
   const slideAnim = useRef(new Animated.Value(420)).current;
   const [nameInput, setNameInput] = useState("");
@@ -244,16 +248,15 @@ const Index = () => {
             saving={saving}
           />
           <StreakBox />
-          <View style={{ marginBottom: 20 }} />
-          <FirstGraph
-            labels={["Week1", "Week2", "Week3", "Week4"]}
-            pointsPerLabel={7}
-            enableWeekFilter
+        <View style ={{marginBottom : 20}}></View>
+          <FirstGraph transactions={transactions} filter = "day"
           />
           <PieGraph />
-          <YearGraph />
-          <TopCategories />
-          <HealthOverall />
+          <YearGraph transactions={transactions}/>
+          <TopCategories/>
+          <HealthOverall/>
+
+          {/* <View style={{ height: 900 }} /> */}
         </ScrollView>
       </View>
 

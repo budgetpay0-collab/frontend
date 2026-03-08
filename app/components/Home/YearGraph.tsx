@@ -4,24 +4,19 @@ import { BarChart } from "react-native-gifted-charts";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 
-import rawData from "../../../store/data.json";
-
-type YearMonth = {
-  month: string;
-  dynamic: number;
-  fixed: number;
-};
-
 const clamp = (n: number, min: number, max: number) =>
   Math.max(min, Math.min(max, n));
 
-const YearGraph = () => {
-  const months: YearMonth[] = (rawData as any)?.yearlyExpenses?.months ?? [];
+const MONTHS = [
+  "Jan","Feb","Mar","Apr","May","Jun",
+  "Jul","Aug","Sep","Oct","Nov","Dec"
+];
 
-  const defaultIndex = Math.max(0, months.findIndex((m) => m.month === "Mar"));
+const YearGraph = ({ transactions }: { transactions: any[] }) => {
+
+  const defaultIndex = new Date().getMonth();
   const [selectedIndex, setSelectedIndex] = useState(defaultIndex);
-
-  const [tipSize, setTipSize] = useState({ w: 200, h: 86 }); // measured onLayout
+  const [tipSize, setTipSize] = useState({ w: 200, h: 86 });
 
   const { width: screenW } = useWindowDimensions();
 
@@ -32,68 +27,151 @@ const YearGraph = () => {
     return Math.max(240, screenW - cardPaddingH - yAxisLabelWidth - 18);
   }, [screenW]);
 
-  const count = Math.max(1, months.length);
+  /**
+   * =============================
+   * BUILD MONTH DATA FROM TXNS
+   * =============================
+   */
+
+  const monthsData = useMemo(() => {
+
+    const months = MONTHS.map((m) => ({
+      month: m,
+      values: [] as number[],
+      total: 0,
+      min: 0,
+      max: 0,
+    }));
+
+    transactions?.forEach((t) => {
+      const date = new Date(t.createdAt);
+      const m = date.getMonth();
+      const amt = Number(t.amount) || 0;
+
+      months[m].values.push(amt);
+    });
+
+    months.forEach((m) => {
+      if (m.values.length === 0) {
+        m.total = 0;
+        m.min = 0;
+        m.max = 0;
+      } else {
+        m.total = m.values.reduce((a, b) => a + b, 0);
+        m.min = Math.min(...m.values);
+        m.max = Math.max(...m.values);
+      }
+    });
+
+    return months;
+
+  }, [transactions]);
+
+  const count = monthsData.length;
+
+  /**
+   * =============================
+   * BAR WIDTH CALCULATION
+   * =============================
+   */
 
   const { barWidth, spacing } = useMemo(() => {
+
     const denom = count + 0.9 * (count - 1);
     let bw = availableChartWidth / denom;
-    bw = clamp(bw, 5, 12);
-    const sp = clamp(0.9 * bw, 4, 14);
+
+    bw = clamp(bw, 6, 14);
+
+    const sp = clamp(0.9 * bw, 6, 16);
+
     return { barWidth: bw, spacing: sp };
+
   }, [availableChartWidth, count]);
 
   const chartHeight = 220;
 
+  /**
+   * =============================
+   * CHART DATA
+   * =============================
+   */
+
   const chartData = useMemo(() => {
-    return months.map((m, idx) => {
-      const total = (Number(m.dynamic) || 0) + (Number(m.fixed) || 0);
+
+    return monthsData.map((m, idx) => {
+
+      const isZero = m.total === 0;
+
+      const fakeValue = isZero
+        ? Math.floor(Math.random() * 80) + 20
+        : m.total;
+
       return {
-        value: total,
+        value: fakeValue,
+        realValue: m.total,
         label: m.month,
-        dynamic: Number(m.dynamic) || 0,
-        fixed: Number(m.fixed) || 0,
-        frontColor: idx === selectedIndex ? "#22C55E" : "#E5E7EB",
+        min: m.min,
+        max: m.max,
+        frontColor: isZero
+          ? "rgba(255,255,255,0.25)"
+          : idx === selectedIndex
+          ? "#22C55E"
+          : "#E5E7EB",
       };
     });
-  }, [months, selectedIndex]);
 
-  const maxValue = useMemo(() => {
-    const max = chartData.reduce((m, it) => Math.max(m, it.value), 0);
-    const rounded = Math.ceil((max || 500) / 100) * 100;
-    return Math.max(500, rounded);
-  }, [chartData]);
-
-  const selected = useMemo(() => {
-    return chartData[selectedIndex] || null;
-  }, [chartData, selectedIndex]);
+  }, [monthsData, selectedIndex]);
 
   /**
-   * ✅ Tooltip positioning (like screenshot)
-   * x = center of selected bar
-   * y = slightly above top of selected bar
+   * =============================
+   * DYNAMIC Y AXIS
+   * =============================
    */
+
+  const maxValue = useMemo(() => {
+
+    const max = monthsData.reduce((m, it) => Math.max(m, it.total), 0);
+
+    if (max === 0) return 500;
+
+    const rounded = Math.ceil(max / 100) * 100;
+
+    return rounded;
+
+  }, [monthsData]);
+
+  const selected = chartData[selectedIndex] || null;
+
+  /**
+   * =============================
+   * TOOLTIP POSITION
+   * =============================
+   */
+
   const tooltipPos = useMemo(() => {
+
     if (!selected) return { left: 0, top: 0 };
 
     const block = barWidth + spacing;
 
-    // x of bar center (inside plot area)
-    const barCenterX = yAxisLabelWidth + barWidth / 2 + selectedIndex * block;
+    const barCenterX =
+      yAxisLabelWidth + barWidth / 2 + selectedIndex * block;
 
-    // y of bar top (inside plot area)
-    const barH = maxValue > 0 ? (selected.value / maxValue) * chartHeight : 0;
+    const barH =
+      maxValue > 0 ? (selected.value / maxValue) * chartHeight : 0;
+
     const barTopY = chartHeight - barH;
 
-    // place tooltip above bar top
     let left = barCenterX - tipSize.w / 2;
     let top = barTopY - tipSize.h - 10;
 
-    // clamp tooltip within chart container width
     const containerW = yAxisLabelWidth + availableChartWidth;
+
     left = clamp(left, 6, containerW - tipSize.w - 6);
     top = clamp(top, 6, chartHeight - tipSize.h - 6);
 
     return { left, top };
+
   }, [
     selected,
     selectedIndex,
@@ -126,64 +204,61 @@ const YearGraph = () => {
       />
 
       <View style={styles.titlePill}>
-        <Text style={styles.titlePillText}>Yearly Dynamic/Fixed Expenses</Text>
+        <Text style={styles.titlePillText}>Yearly Expenses</Text>
       </View>
 
-      {/* ✅ Chart + tooltip overlay area */}
       <View style={styles.chartArea}>
-        {/* Tooltip INSIDE graph (like screenshot) */}
-        {selected ? (
+
+        {selected && (
           <View
             style={[styles.tipContainer, { left: tooltipPos.left, top: tooltipPos.top }]}
             onLayout={(e) => {
               const { width, height } = e.nativeEvent.layout;
-              if (width && height) setTipSize({ w: width, h: height });
+              setTipSize({ w: width, h: height });
             }}
           >
             <Text style={styles.tipMonth}>{selected.label}</Text>
 
             <View style={styles.tipBox}>
               <Text style={styles.tipLine}>
-                Total:{" "}
-                <Text style={[styles.tipValue, { color: "#3B82F6" }]}>
-                  ₹{selected.dynamic}
-                </Text>
+                Total: <Text style={styles.tipValue}>₹{selected.realValue}</Text>
               </Text>
+
               <Text style={styles.tipLine}>
-                Total:{" "}
-                <Text style={[styles.tipValue, { color: "#A855F7" }]}>
-                  ₹{selected.fixed}
-                </Text>
+                Min: <Text style={styles.tipValue}>₹{selected.min}</Text>
+              </Text>
+
+              <Text style={styles.tipLine}>
+                Max: <Text style={styles.tipValue}>₹{selected.max}</Text>
               </Text>
             </View>
           </View>
-        ) : null}
+        )}
 
-<View style={styles.chartWrap}>
-        <BarChart
-          data={chartData}
-          height={chartHeight}
-          barWidth={barWidth}
-          spacing={spacing}
-          roundedTop
-          roundedBottom
-          yAxisLabelPrefix="₹"
-          maxValue={maxValue}
-          noOfSections={5}
-          rulesType="dashed"
-          rulesColor="rgba(255,255,255,0.20)"
-          yAxisTextStyle={styles.yAxisText}
-          xAxisLabelTextStyle={styles.xAxisText}
-          xAxisColor="rgba(255,255,255,0.35)"
-          yAxisColor="rgba(255,255,255,0.35)"
-          yAxisLabelWidth={yAxisLabelWidth}
-          xAxisThickness={1}
-          yAxisThickness={1}
-          showYAxisIndices={false}
-          disableScroll
-          width={availableChartWidth}
-          onPress={(item: any, index: number) => setSelectedIndex(index)}
-        />
+        <View style={styles.chartWrap}>
+          <BarChart
+            data={chartData}
+            height={chartHeight}
+            barWidth={barWidth}
+            spacing={spacing}
+            roundedTop
+            roundedBottom
+            yAxisLabelPrefix="₹"
+            maxValue={maxValue}
+            noOfSections={5}
+            rulesType="dashed"
+            rulesColor="rgba(255,255,255,0.20)"
+            yAxisTextStyle={styles.yAxisText}
+            xAxisLabelTextStyle={styles.xAxisText}
+            xAxisColor="rgba(255,255,255,0.35)"
+            yAxisColor="rgba(255,255,255,0.35)"
+            yAxisLabelWidth={yAxisLabelWidth}
+            xAxisThickness={1}
+            yAxisThickness={1}
+            disableScroll
+            width={availableChartWidth}
+            onPress={(item: any, index: number) => setSelectedIndex(index)}
+          />
         </View>
       </View>
     </View>
@@ -234,7 +309,7 @@ const styles = StyleSheet.create({
   },
   titlePillText: {
     color: "#000",
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: "Poppins-SemiBold",
   },
 

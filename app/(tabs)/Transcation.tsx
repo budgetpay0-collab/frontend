@@ -25,6 +25,7 @@ import TransactionList from "../components/Transaction/TransactionList";
 
 import { baseURL } from "@/store/baseURL";
 import { useUserStore } from "@/store/userStore";
+import { useCategoryStore } from "@/store/categoryStore";
 
 const cbaseURL = baseURL.nihal;
 
@@ -39,13 +40,15 @@ const Transcation = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const [transactions, setTransactions] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+
 
   const [amount, setAmount] = useState("");
   const [transactionName, setTransactionName] = useState("");
   const [category, setCategory] = useState("");
   const setHydration = useUserStore((s)=>s.setHydration)
   const hydration = useUserStore((s)=>s.hydration)
+  const getCategories = useCategoryStore((s)=>s.fetchCategories)
+  const categories = useCategoryStore((s)=>s.categories)  
   /* ================= FETCH TRANSACTIONS ================= */
 
   const fetchTransactions = async () => {
@@ -65,17 +68,10 @@ const Transcation = () => {
   }, []);
 
 
-  const fetchCategories = async () => {
-    try {
-      const res = await axios.get(`${cbaseURL}/categories/${USER_ID}`);
-      setCategories(res.data || []);
-    } catch (err) {
-      console.warn("Category fetch error", err);
-    }
-  };
+
 
   useEffect(() => {
-    if (modalVisible) fetchCategories();
+    if (modalVisible) getCategories(USER_ID);
   }, [modalVisible]);
 
 
@@ -93,6 +89,7 @@ const Transcation = () => {
 
       Alert.alert("Success", "Transaction Added");
       fetchTransactions();
+      getCategories(USER_ID)
       setHydration(!hydration)
       resetModal();
     } catch (err) {
@@ -117,6 +114,8 @@ const Transcation = () => {
 
       Alert.alert("Success", "Transaction Updated");
       fetchTransactions();
+      getCategories(USER_ID)
+      setHydration(!hydration)
       resetModal();
     } catch (err) {
       console.warn(err);

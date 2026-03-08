@@ -3,20 +3,12 @@ import { View, Text, StyleSheet } from "react-native";
 import { PieChart } from "react-native-gifted-charts";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
+import { Feather } from "@expo/vector-icons";
 
-import rawData from "../../../store/data.json";
-
-type Category = {
-  id: string;
-  name: string;
-  allocated: number;
-  spent: number;
-  color: string;
-  icon?: string;
-};
+import { useCategoryStore } from "@/store/categoryStore";
 
 const PieGraph = () => {
-  const categories: Category[] = (rawData as any)?.categories ?? [];
+  const categories = useCategoryStore((s) => s.categories);
 
   const totalAllocated = useMemo(() => {
     return categories.reduce((sum, c) => sum + (Number(c.allocated) || 0), 0);
@@ -25,7 +17,8 @@ const PieGraph = () => {
   const pieData = useMemo(() => {
     return categories
       .map((c) => {
-        const val = Number(c.allocated) || 0; // ✅ allocated (change to c.spent if needed)
+        const val = Number(c.allocated) || 0;
+
         const percent =
           totalAllocated > 0 ? Math.round((val / totalAllocated) * 100) : 0;
 
@@ -37,6 +30,8 @@ const PieGraph = () => {
       })
       .filter((x) => x.value > 0);
   }, [categories, totalAllocated]);
+
+  const isEmpty = pieData.length === 0;
 
   return (
     <View style={styles.outerCard}>
@@ -51,7 +46,7 @@ const PieGraph = () => {
         style={styles.topHighlight}
       />
 
-      {/* Bottom shadow depth */}
+      {/* Bottom shadow */}
       <LinearGradient
         colors={["rgba(0,0,0,0.00)", "rgba(0,0,0,0.60)"]}
         start={{ x: 0.5, y: 0.2 }}
@@ -59,22 +54,35 @@ const PieGraph = () => {
         style={styles.bottomShadow}
       />
 
-      {/* Content */}
       <View style={styles.content}>
         <Text style={styles.title}>Budget Allocation</Text>
 
-        <View style={styles.chartWrap}>
-          <PieChart
-            data={pieData}
-            radius={140}
-            strokeWidth={2}
-            strokeColor={"#000"} // gap between slices
-            showText
-            textColor="#fff"
-            textSize={14}
-            textBackgroundColor="transparent"
-          />
-        </View>
+        {isEmpty ? (
+          <View style={styles.emptyState}>
+            <View style={styles.iconWrap}>
+              <Feather name="pie-chart" size={36} color="#9CA3AF" />
+            </View>
+
+            <Text style={styles.emptyTitle}>No budget allocated</Text>
+
+            <Text style={styles.emptySub}>
+              Add categories and assign a budget to see insights here.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.chartWrap}>
+            <PieChart
+              data={pieData}
+              radius={140}
+              strokeWidth={2}
+              strokeColor={"#000"}
+              showText
+              textColor="#fff"
+              textSize={14}
+              textBackgroundColor="transparent"
+            />
+          </View>
+        )}
       </View>
     </View>
   );
@@ -95,11 +103,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     elevation: 8,
     alignSelf: "stretch",
-    marginTop:10
+    marginTop: 10,
   },
 
   content: {
-    paddingVertical: 14,
+    paddingVertical: 20,
     paddingHorizontal: 14,
     alignItems: "center",
   },
@@ -108,13 +116,44 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.92)",
     fontSize: 18,
     fontFamily: "Poppins-SemiBold",
-    marginBottom: 10,
+    marginBottom: 14,
   },
 
   chartWrap: {
     alignItems: "center",
     justifyContent: "center",
     paddingBottom: 8,
+  },
+
+  /* EMPTY STATE */
+
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+
+  iconWrap: {
+    backgroundColor: "rgba(255,255,255,0.06)",
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 12,
+  },
+
+  emptyTitle: {
+    color: "#E5E7EB",
+    fontSize: 16,
+    fontFamily: "Poppins-SemiBold",
+    marginBottom: 4,
+  },
+
+  emptySub: {
+    color: "#9CA3AF",
+    fontSize: 13,
+    textAlign: "center",
+    lineHeight: 18,
+    maxWidth: 220,
   },
 
   topHighlight: {
