@@ -23,6 +23,7 @@ import OverallBudgetProgress from "../components/Budget/OverallBudgetProgress";
 import DynamicCategory from "../components/Budget/DynamicCategory";
 import { baseURL } from "@/store/baseURL";
 import { useUserStore } from "@/store/userStore";
+import { useCategoryStore } from "@/store/categoryStore";
 
 const baseURLValue = baseURL.nihal;
 
@@ -51,13 +52,12 @@ const ICONS = [
 ];
 
 const Budget = () => {
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
+  
+  const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const user = useUserStore((s) => s.user);
   const userId = user?._id; // Replace with dynamic user ID
-  const [monthlyIncome, setMonthlyIncome] = useState(0);
-  const [monthlySpend, setMonthlySpend] = useState(0);
+  
 
   // Modal State
   const [modalVisible, setModalVisible] = useState(false);
@@ -68,36 +68,14 @@ const Budget = () => {
 
   /* ================= FETCH ================= */
 
-  const fetchCategories = async () => {
-    try {
-      setLoading(true);
-      const res = await axios.get(`${baseURLValue}/categories/${userId}`);
-
-      if (res.status === 200) {
-        setCategories(res.data);
-
-        const totalAllocated = res.data.reduce(
-          (sum: number, cat: any) => sum + cat.allocated,
-          0
-        );
-
-        const totalSpent = res.data.reduce(
-          (sum: number, cat: any) => sum + cat.spent,
-          0
-        );
-
-        setMonthlyIncome(totalAllocated);
-        setMonthlySpend(totalSpent);
-      }
-    } catch (err) {
-      Alert.alert("Error", "Failed to fetch categories");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  const fetchCategories = useCategoryStore((s) => s.fetchCategories);
+  const categories = useCategoryStore((s) => s.categories);
+  const monthlyIncome = useCategoryStore((s) => s.monthlyIncome);
+  const monthlySpend = useCategoryStore((s) => s.monthlySpend);
+ const addCategory = useCategoryStore((s) => s.addCategory);
+ const handleDeleteCategory = useCategoryStore((s) => s.deleteCategory);
   useEffect(() => {
-    fetchCategories();
+    fetchCategories(userId);
   }, []);
 
   /* ================= ADD CATEGORY ================= */
@@ -120,16 +98,9 @@ const Budget = () => {
         icon: selectedIcon,
       };
 
-      const res = await axios.post(`${baseURLValue}/category/add`, {
-        userId,
-        ...newCategory,
-      });
-
-      if (res.status === 201) {
-        setModalVisible(false);
-        resetForm();
-        fetchCategories();
-      }
+      await addCategory(userId, newCategory);
+      setModalVisible(false);
+      resetForm();
     } catch (err: any) {
       if (err?.response?.status === 409) {
         Alert.alert("Duplicate", "Category already exists");
@@ -154,12 +125,7 @@ const Budget = () => {
     try {
       setActionLoading(true);
 
-      await axios.post(`${baseURLValue}/category/delete`, {
-        userId,
-        name,
-      });
-
-      fetchCategories();
+      await handleDeleteCategory(userId, name);     
     } catch {
       Alert.alert("Error", "Could not delete category");
     } finally {

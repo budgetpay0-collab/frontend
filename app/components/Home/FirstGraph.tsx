@@ -1,4 +1,4 @@
-// FirstGraph.tsx (STATIC) - Correct week mapping + Week labels on X axis
+// FirstGraph.tsx
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
@@ -6,47 +6,76 @@ import { LineChart } from "react-native-gifted-charts";
 const GREEN = "#28F07B";
 const BG = "#0B0B0B";
 
-const FirstGraph = () => {
-  // ✅ 16 points = 4 weeks * 4 points
-  const rawData = [120, 80, 200, 160, 240, 180, 400, 245, 110, 160, 210, 180, 260, 380, 280, 400];
-  const labels = ["Week1", "Week2", "Week3", "Week4"];
-  const maxValue = 500;
+const FirstGraph = ({
+  transactions,
+  filter,
+}: {
+  transactions: any[];
+  filter: string;
+}) => {
+  const isDayFilter = filter === "day";
 
-  const POINTS_PER_WEEK = Math.floor(rawData.length / labels.length); // 4
+  const weekData = useMemo(() => {
+    if (!isDayFilter) return { chartData: [], maxValue: 100 };
 
-  // ✅ Put x-axis labels at the *center* of each week
-  // Week1 center index = 2, Week2 = 6, Week3 = 10, Week4 = 14
-  const labelIndexes = useMemo(() => {
-    const set = new Set<number>();
-    for (let w = 0; w < labels.length; w++) {
-      const start = w * POINTS_PER_WEEK;
-      const center = start + Math.floor(POINTS_PER_WEEK / 2);
-      set.add(center);
+    const today = new Date();
+
+    // Start of week (Sunday)
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+
+    const days: Date[] = [];
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(startOfWeek);
+      d.setDate(startOfWeek.getDate() + i);
+      days.push(d);
     }
-    return set;
-  }, []);
 
-  // ✅ Gifted chart supports "label" per data item for X-axis
-  const chartData = useMemo(() => {
-    return rawData.map((v, i) => {
-      const weekIndex = Math.min(labels.length - 1, Math.floor(i / POINTS_PER_WEEK));
-      return {
-        value: v,
-        label: labelIndexes.has(i) ? labels[weekIndex] : "", // show only 4 labels on axis
-      };
+    // Initialize totals
+    const totals: Record<string, number> = {};
+
+    days.forEach((d) => {
+      totals[d.toDateString()] = 0;
     });
-  }, [labelIndexes]);
 
-  const getWeekFromIndex = (index: number) => {
-    const i = Math.max(0, Math.min(rawData.length - 1, index));
-    const weekIndex = Math.min(labels.length - 1, Math.floor(i / POINTS_PER_WEEK));
-    return labels[weekIndex];
+    // Aggregate transactions
+    transactions.forEach((t) => {
+      const d = new Date(t.createdAt);
+      const key = d.toDateString();
+
+      if (totals[key] !== undefined) {
+        totals[key] += t.amount;
+      }
+    });
+
+    const chartData = days.map((d) => ({
+      value: totals[d.toDateString()] || 0,
+      label: d.getDate().toString(),
+      date: d,
+    }));
+
+    const maxTransaction = Math.max(...chartData.map((d) => d.value), 0);
+
+    return {
+      chartData,
+      maxValue: maxTransaction === 0 ? 100 : maxTransaction * 1.2,
+    };
+  }, [transactions, filter]);
+
+  const chartData = weekData.chartData;
+  const maxValue = weekData.maxValue;
+
+  const getDateFromIndex = (index: number) => {
+    if (!chartData[index]) return "";
+    const d = chartData[index].date;
+    return `${d.getDate()}/${d.getMonth() + 1}`;
   };
 
   return (
     <View style={styles.wrap}>
       <View style={styles.card}>
-        {/* Title pill */}
+        {/* Title */}
         <View style={styles.titlePill}>
           <Text style={styles.titleText}>Spending Trends</Text>
         </View>
@@ -61,31 +90,20 @@ const FirstGraph = () => {
             maxValue={maxValue}
             adjustToWidth
             disableScroll
-
-            // axes
             yAxisColor="rgba(255,255,255,0.75)"
             xAxisColor="rgba(255,255,255,0.75)"
             yAxisTextStyle={styles.yAxisText}
             yAxisLabelPrefix="₹"
             yAxisLabelWidth={42}
             xAxisLabelTextStyle={styles.xAxisText}
-            xAxisLabelsVerticalShift={10}
-            xAxisTextNumberOfLines={1}
-
-            // dashed grid
+            xAxisLabelsVerticalShift={6}
             rulesType="dashed"
             rulesColor="rgba(255,255,255,0.18)"
             rulesThickness={1}
             noOfSections={5}
-
-            // spacing
-            initialSpacing={12}
-            spacing={22}
-
-            // ✅ Hide dots on the line
+            initialSpacing={10}
+            spacing={40}
             hideDataPoints
-
-            // ✅ Pointer / tooltip (tap anywhere -> snaps to nearest point)
             pointerConfig={{
               pointerStripHeight: 140,
               pointerStripWidth: 1.2,
@@ -93,27 +111,30 @@ const FirstGraph = () => {
               pointerColor: "#FFFFFF",
               radius: 6,
               pointerStripUptoDataPoint: true,
-
-              // ✅ show instantly on touch (better than long press)
               activatePointersOnLongPress: false,
               activatePointersInstantlyOnTouch: true,
               activatePointersDelay: 0,
-
               autoAdjustPointerLabelPosition: true,
 
-              // ✅ IMPORTANT: use pointerIndex (3rd param) to know which point user touched
-              pointerLabelComponent: (items: any[], _secondary: any, pointerIndex: number) => {
-                const safeIndex = Number.isFinite(pointerIndex) ? pointerIndex : 0;
-                const week = getWeekFromIndex(safeIndex);
+              pointerLabelComponent: (
+                items: any[],
+                _secondary: any,
+                pointerIndex: number
+              ) => {
+                const safeIndex = Number.isFinite(pointerIndex)
+                  ? pointerIndex
+                  : 0;
+
+                const dateLabel = getDateFromIndex(safeIndex);
 
                 const valueFromItem = items?.[0]?.value;
                 const value = Number.isFinite(valueFromItem)
                   ? valueFromItem
-                  : rawData[Math.max(0, Math.min(rawData.length - 1, safeIndex))];
+                  : 0;
 
                 return (
                   <View style={styles.tooltip}>
-                    <Text style={styles.tooltipTop}>{week.toLowerCase()}</Text>
+                    <Text style={styles.tooltipTop}>{dateLabel}</Text>
 
                     <View style={styles.tooltipRow}>
                       <Text style={styles.tooltipText}>Amount :</Text>
@@ -128,10 +149,10 @@ const FirstGraph = () => {
           />
         </View>
 
-        {/* Week pills (UI only) */}
+        {/* Week labels */}
         <View style={styles.weekRow}>
-          {labels.map((l, i) => (
-            <TouchableOpacity key={`${l}-${i}`} activeOpacity={0.9} style={styles.weekPill}>
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((l, i) => (
+            <TouchableOpacity key={i} style={styles.weekPill}>
               <Text style={styles.weekText}>{l}</Text>
             </TouchableOpacity>
           ))}
@@ -163,6 +184,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 8,
   },
+
   titleText: {
     color: BG,
     fontWeight: "800",
@@ -171,8 +193,8 @@ const styles = StyleSheet.create({
 
   chartWrap: {
     borderRadius: 14,
-    overflow: "hidden",
     paddingTop: 4,
+    paddingBottom: 12, // prevents label clipping
   },
 
   yAxisText: {
@@ -180,6 +202,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
   },
+
   xAxisText: {
     color: "rgba(255,255,255,0.85)",
     fontSize: 12,
@@ -190,8 +213,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 10,
-    gap: 10,
   },
+
   weekPill: {
     flex: 1,
     height: 34,
@@ -200,15 +223,14 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.65)",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "transparent",
   },
+
   weekText: {
     color: "rgba(255,255,255,0.9)",
     fontWeight: "800",
     fontSize: 13,
   },
 
-  // Tooltip
   tooltip: {
     backgroundColor: BG,
     borderWidth: 1.2,
@@ -218,27 +240,31 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     minWidth: 140,
   },
+
   tooltipTop: {
     color: "rgba(255,255,255,0.92)",
     fontWeight: "800",
     fontSize: 12,
     marginBottom: 4,
-    textTransform: "lowercase",
   },
+
   tooltipRow: {
     flexDirection: "row",
     alignItems: "center",
   },
+
   tooltipText: {
     color: "rgba(255,255,255,0.92)",
     fontWeight: "800",
     fontSize: 12,
   },
+
   tooltipValue: {
     color: GREEN,
     fontWeight: "900",
     fontSize: 12,
   },
+
   tooltipNub: {
     position: "absolute",
     bottom: -6,

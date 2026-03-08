@@ -31,6 +31,7 @@ import TopCategories from "../components/Home/TopCategories";
 import HealthOverall from "../components/Home/HealthOverall";
 import { fetchTransactions } from "@/apiCalls/Transactions/fetchTransactions";
 import { baseURL } from "@/store/baseURL";
+import { useCategoryStore } from "@/store/categoryStore";
 
 const Index = () => {
   const [loading, setLoading] = useState(true);
@@ -39,6 +40,7 @@ const Index = () => {
   const setUser = useUserStore((s) => s.setUser);
   const [transactions, setTransactions] = useState([]);
   const hydration  = useUserStore((s)=>s.hydration)
+  const fetchCategories = useCategoryStore((s) => s.fetchCategories);
   useEffect(() => {
      async function getTransactions() {
       if (!userData) return;
@@ -59,7 +61,11 @@ const Index = () => {
     setLoading(false);
   },[hydration]);
   /* ================= MODAL STATE ================= */
-  
+  useEffect(() => {
+    if(userData?._id){
+      fetchCategories(userData?._id);
+    }
+  },[])
   const [showModal, setShowModal] = useState(false);
   const slideAnim = useRef(new Animated.Value(420)).current;
 
@@ -210,13 +216,10 @@ const Index = () => {
           />
           <StreakBox />
         <View style ={{marginBottom : 20}}></View>
-          <FirstGraph
-            labels={["Week1", "Week2", "Week3", "Week4"]}
-            pointsPerLabel={7}
-            enableWeekFilter
+          <FirstGraph transactions={transactions} filter = "day"
           />
-          <PieGraph/>
-          <YearGraph/>
+          <PieGraph />
+          <YearGraph transactions={transactions}/>
           <TopCategories/>
           <HealthOverall/>
 
