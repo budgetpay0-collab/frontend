@@ -142,14 +142,14 @@ const styles = StyleSheet.create({
 
   title: {
     color: "rgba(255,255,255,0.92)",
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: "Poppins-Medium",
     letterSpacing: 0.2,
   },
 
   value: {
     color: "#FFFFFF",
-    fontSize: 24,
+    fontSize: 20,
     fontFamily: "Poppins-SemiBold",
     letterSpacing: 0.2,
   },

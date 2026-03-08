@@ -294,8 +294,8 @@ const styles = StyleSheet.create({
   addBtnWrap: { alignItems: "center", marginTop: 12, paddingVertical: 18 },
   addBtn: {
     backgroundColor: "#16C784",
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     borderRadius: 10,
   },
   addBtnPressed: { opacity: 0.9 },

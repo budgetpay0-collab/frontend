@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
 
   heading: {
     color: "rgba(255,255,255,0.92)",
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: "Poppins-SemiBold",
     marginBottom: 12,
   },
@@ -216,18 +216,18 @@ const styles = StyleSheet.create({
   },
 
   catName: {
-    fontSize: 15,
+    fontSize: 13,
     fontFamily: "Poppins-SemiBold",
   },
 
   sep: {
     color: "rgba(255,255,255,0.55)",
-    fontSize: 14,
+    fontSize: 12,
     marginHorizontal: 2,
   },
 
   pctText: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: "Poppins-SemiBold",
   },
 
@@ -256,14 +256,14 @@ const styles = StyleSheet.create({
 
   statLabel: {
     color: "rgba(255,255,255,0.7)",
-    fontSize: 12.5,
+    fontSize: 11.5,
     fontFamily: "Poppins-Medium",
     marginBottom: 6,
   },
 
   statValue: {
     color: "#FFFFFF",
-    fontSize: 18,
+    fontSize: 14,
     fontFamily: "Poppins-SemiBold",
   },
 

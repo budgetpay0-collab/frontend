@@ -33,7 +33,7 @@ const Header: React.FC<Props> = ({
         style={styles.iconBtn}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       >
-        <Feather name="tag" size={30} color="#FFFFFF" />
+        <Feather name="tag" size={25} color="#FFFFFF" />
       </TouchableOpacity>
       
     </View>
@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     paddingRight: 12,
   },
   title: {
-    fontSize: 20,
+    fontSize: 24,
     lineHeight: 30,
     // fontWeight: "800",
     fontFamily:'Poppins-SemiBold',
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     // marginTop: 4,
-    fontSize: 12,
+    fontSize: 11,
     lineHeight: 18,
     color: "rgba(255,255,255,0.65)",
     // fontWeight: "500",

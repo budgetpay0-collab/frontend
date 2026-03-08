@@ -27,7 +27,7 @@ export default TopHeader;
 const styles = StyleSheet.create({
   
   wrap: {
-    backgroundColor: "#024000",
+    backgroundColor: "#21C36B",
     marginTop:20,
     paddingTop: 10,
     paddingBottom: 14,

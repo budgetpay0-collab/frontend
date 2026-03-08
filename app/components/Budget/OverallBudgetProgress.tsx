@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     color: "rgba(255,255,255,0.92)",
-    fontSize: 18,
+    fontSize: 15,
     fontFamily: "Poppins-SemiBold",
   },
 
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
 
   pillText: {
     color: "rgba(110, 175, 255, 0.95)",
-    fontSize: 13,
+    fontSize: 11,
     fontFamily: "Poppins-Medium",
   },
  barWrap: {
