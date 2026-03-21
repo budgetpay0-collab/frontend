@@ -1,13 +1,26 @@
 // screens/Goal.tsx
-import React from "react";
+import React, { useMemo } from "react";
 import { StyleSheet, Image, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import TopHeader from "../components/Goal/TopHeader";
 import MonthlyGoal from "../components/Goal/MonthlyGoal";
 import Card from "../components/Goal/Card";
 import SavingTip from "../components/Goal/SavingTip";
+import { useCategoryStore } from "@/store/categoryStore";
 
 const Goal = () => {
+  const categories = useCategoryStore((state) => state.categories);
+
+  const { totalAllocated, totalSpent } = useMemo(() => {
+    return categories.reduce(
+      (acc, category) => ({
+        totalAllocated: acc.totalAllocated + (category.allocated ?? 0),
+        totalSpent: acc.totalSpent + (category.spent ?? 0),
+      }),
+      { totalAllocated: 0, totalSpent: 0 }
+    );
+  }, [categories]);
+
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView
@@ -18,7 +31,7 @@ const Goal = () => {
       >
         <TopHeader />
 
-        <MonthlyGoal current={5000} target={10000} />
+        <MonthlyGoal current={totalSpent} target={totalAllocated} />
 
         <Card
           monthEndDate="15/05/2026"
@@ -42,13 +55,11 @@ const Goal = () => {
 export default Goal;
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#0B0B0B" }, // ✅ IMPORTANT
+  safe: { flex: 1, backgroundColor: "#0B0B0B" },
   scroll: { flex: 1 },
-
   scrollContent: {
-    paddingBottom: 0, // ✅ remove extra end blank
+    paddingBottom: 0,
   },
-
   image: {
     width: "100%",
     height: 80,
