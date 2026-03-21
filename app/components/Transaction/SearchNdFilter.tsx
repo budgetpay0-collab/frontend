@@ -21,9 +21,15 @@ type Props = {
 
   categoryLabel?: string; // default: All Categories
   onPressCategory?: () => void;
+  onPickCategory?: (item: string) => void;
 
+  filterLabel?: string;
   onPressFilters?: () => void;
+  onPickFilter?: (item: string) => void;
+
+  sortLabel?: string;
   onPressSort?: () => void;
+  onPickSort?: (item: string) => void;
 };
 
 const SearchNdFilter: React.FC<Props> = ({
@@ -31,8 +37,13 @@ const SearchNdFilter: React.FC<Props> = ({
   onChangeText,
   categoryLabel = "All Categories",
   onPressCategory,
+  onPickCategory,
+  filterLabel = "FILTERS",
   onPressFilters,
+  onPickFilter,
+  sortLabel = "SORT",
   onPressSort,
+  onPickSort,
 }) => {
   const [query, setQuery] = useState(value ?? "");
   const [openCategory, setOpenCategory] = useState(false);
@@ -89,7 +100,7 @@ const SearchNdFilter: React.FC<Props> = ({
           onPress={onPressFilters ?? (() => setOpenFilters(true))}
         >
           <Feather name="filter" size={14} color="#FFFFFF" />
-          <Text style={[styles.pillText]}>FILTERS</Text>
+          <Text style={[styles.pillText]}>{filterLabel}</Text>
           <Ionicons name="chevron-down" size={14} color="#FFFFFF" />
         </TouchableOpacity>
 
@@ -99,7 +110,7 @@ const SearchNdFilter: React.FC<Props> = ({
           onPress={onPressSort ?? (() => setOpenSort(true))}
         >
           <Feather name="sliders" size={14} color="#FFFFFF" />
-          <Text style={[styles.pillText]}>SORT</Text>
+          <Text style={[styles.pillText]}>{sortLabel}</Text>
           <Ionicons name="chevron-down" size={14} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
@@ -112,9 +123,7 @@ const SearchNdFilter: React.FC<Props> = ({
         items={["All Categories", "Food", "Shopping", "Bills", "Travel"]}
         onPick={(x) => {
           setOpenCategory(false);
-          // If you want: onPressCategory?.()
-          // Or lift state up: pass callback to set selected category.
-          console.log("Picked:", x);
+          onPickCategory?.(x);
         }}
       />
 
@@ -122,10 +131,10 @@ const SearchNdFilter: React.FC<Props> = ({
         visible={openFilters}
         title="Filters"
         onClose={() => setOpenFilters(false)}
-        items={["This week", "This month", "Above ₹500", "Below ₹500"]}
+        items={["All", "This week", "This month", "Above ₹500", "Below ₹500"]}
         onPick={(x) => {
           setOpenFilters(false);
-          console.log("Picked:", x);
+          onPickFilter?.(x === "All" ? "" : x);
         }}
       />
 
@@ -136,7 +145,7 @@ const SearchNdFilter: React.FC<Props> = ({
         items={["Newest first", "Oldest first", "Amount high → low", "Amount low → high"]}
         onPick={(x) => {
           setOpenSort(false);
-          console.log("Picked:", x);
+          onPickSort?.(x);
         }}
       />
     </View>

@@ -20,12 +20,14 @@ type Props = {
   data: Txn[];
   onEdit: (item: Txn) => void;
   onDelete: (item: Txn) => void;
+  isFiltered?: boolean;
 };
 
 const TransactionList: React.FC<Props> = ({
   data,
   onEdit,
   onDelete,
+  isFiltered = false,
 }) => {
   const hasData = data && data.length > 0;
 
@@ -99,11 +101,13 @@ const TransactionList: React.FC<Props> = ({
           </View>
 
           <Text style={styles.subtitle}>
-            No transactions found
+            {isFiltered ? "No transactions for this filter" : "No transactions found"}
           </Text>
 
           <Text style={styles.helper}>
-            Add your first transaction to get started.
+            {isFiltered
+              ? "Try adjusting or clearing your filters."
+              : "Add your first transaction to get started."}
           </Text>
         </View>
       </View>

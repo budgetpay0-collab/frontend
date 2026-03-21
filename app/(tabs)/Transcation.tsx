@@ -1,20 +1,20 @@
 // Transcation.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   View,
   Text,
   StyleSheet,
   StatusBar,
-  ScrollView,
   TouchableOpacity,
+  Pressable,
   Modal,
   TextInput,
   FlatList,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
 import axios from "axios";
 
 import TopHeadder from "../components/Transaction/TopHeadder";
@@ -38,8 +38,15 @@ const Transcation = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [successModal, setSuccessModal] = useState<{ visible: boolean; type: "added" | "updated" }>({ visible: false, type: "added" });
 
   const [transactions, setTransactions] = useState<any[]>([]);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All Categories");
+  const [selectedFilter, setSelectedFilter] = useState("");
+  const [selectedSort, setSelectedSort] = useState("Newest first");
 
 
   const [amount, setAmount] = useState("");
@@ -87,11 +94,11 @@ const Transcation = () => {
         }
       );
 
-      Alert.alert("Success", "Transaction Added");
       fetchTransactions();
-      getCategories(USER_ID)
-      setHydration(!hydration)
+      getCategories(USER_ID);
+      setHydration(!hydration);
       resetModal();
+      setSuccessModal({ visible: true, type: "added" });
     } catch (err) {
       console.warn(err);
     }
@@ -112,11 +119,11 @@ const Transcation = () => {
         }
       );
 
-      Alert.alert("Success", "Transaction Updated");
       fetchTransactions();
-      getCategories(USER_ID)
-      setHydration(!hydration)
+      getCategories(USER_ID);
+      setHydration(!hydration);
       resetModal();
+      setSuccessModal({ visible: true, type: "updated" });
     } catch (err) {
       console.warn(err);
     }
@@ -124,23 +131,20 @@ const Transcation = () => {
 
   /* ================= DELETE ================= */
 
-  const deleteTransaction = async (id: string) => {
-    Alert.alert("Delete", "Are you sure?", [
-      { text: "Cancel" },
-      {
-        text: "Yes",
-        onPress: async () => {
-          try {
-            await axios.delete(
-              `${cbaseURL}/delete-transaction/${USER_ID}/${id}`
-            );
-            fetchTransactions();
-          } catch (err) {
-            console.warn(err);
-          }
-        },
-      },
-    ]);
+  const deleteTransaction = (id: string) => {
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirmId) return;
+    const id = deleteConfirmId;
+    setDeleteConfirmId(null);
+    try {
+      await axios.delete(`${cbaseURL}/delete-transaction/${USER_ID}/${id}`);
+      fetchTransactions();
+    } catch (err) {
+      console.warn(err);
+    }
   };
 
   /* ================= EDIT HANDLER ================= */
@@ -165,9 +169,76 @@ const Transcation = () => {
     setCategory("");
   };
 
+  /* ================= FILTER / SORT ================= */
+
+  const filteredTransactions = useMemo(() => {
+    let result = [...transactions];
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((t) =>
+        t.transactionName.toLowerCase().includes(q)
+      );
+    }
+
+    if (selectedCategory !== "All Categories") {
+      result = result.filter((t) => t.category === selectedCategory);
+    }
+
+    if (selectedFilter) {
+      const now = new Date();
+      if (selectedFilter === "This week") {
+        const weekAgo = new Date(now);
+        weekAgo.setDate(now.getDate() - 7);
+        result = result.filter(
+          (t) => t.createdAt && new Date(t.createdAt) >= weekAgo
+        );
+      } else if (selectedFilter === "This month") {
+        result = result.filter((t) => {
+          if (!t.createdAt) return false;
+          const d = new Date(t.createdAt);
+          return (
+            d.getMonth() === now.getMonth() &&
+            d.getFullYear() === now.getFullYear()
+          );
+        });
+      } else if (selectedFilter === "Above ₹500") {
+        result = result.filter((t) => Number(t.amount) > 500);
+      } else if (selectedFilter === "Below ₹500") {
+        result = result.filter((t) => Number(t.amount) < 500);
+      }
+    }
+
+    if (selectedSort === "Newest first") {
+      result.sort(
+        (a, b) =>
+          new Date(b.createdAt || 0).getTime() -
+          new Date(a.createdAt || 0).getTime()
+      );
+    } else if (selectedSort === "Oldest first") {
+      result.sort(
+        (a, b) =>
+          new Date(a.createdAt || 0).getTime() -
+          new Date(b.createdAt || 0).getTime()
+      );
+    } else if (selectedSort === "Amount high → low") {
+      result.sort((a, b) => Number(b.amount) - Number(a.amount));
+    } else if (selectedSort === "Amount low → high") {
+      result.sort((a, b) => Number(a.amount) - Number(b.amount));
+    }
+
+    return result;
+  }, [transactions, searchQuery, selectedCategory, selectedFilter, selectedSort]);
+
+  const isFiltered =
+    searchQuery.trim() !== "" ||
+    selectedCategory !== "All Categories" ||
+    selectedFilter !== "" ||
+    selectedSort !== "Newest first";
+
   /* ================= SUMMARY ================= */
 
-  const totalAmount = transactions.reduce(
+  const totalAmount = filteredTransactions.reduce(
     (acc, curr) => acc + Number(curr.amount),
     0
   );
@@ -186,22 +257,32 @@ const Transcation = () => {
               <>
                 <TopHeadder />
                 {/* <Header /> */}
-                <SearchNdFilter />
+                <SearchNdFilter
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  categoryLabel={selectedCategory}
+                  onPickCategory={setSelectedCategory}
+                  filterLabel={selectedFilter || "FILTERS"}
+                  onPickFilter={setSelectedFilter}
+                  sortLabel={selectedSort === "Newest first" ? "SORT" : selectedSort}
+                  onPickSort={setSelectedSort}
+                />
 
                 <TransactionSummary
-                  totalTransactions={transactions.length}
+                  totalTransactions={filteredTransactions.length}
                   totalAmount={totalAmount}
                   averageAmount={
-                    transactions.length
-                      ? totalAmount / transactions.length
+                    filteredTransactions.length
+                      ? totalAmount / filteredTransactions.length
                       : 0
                   }
                 />
 
                 <TransactionList
-                  data={transactions}
+                  data={filteredTransactions}
                   onEdit={handleEdit}
                   onDelete={(item: any) => deleteTransaction(item._id)}
+                  isFiltered={isFiltered}
                 />
 
                 <View style={styles.btnRow}>
@@ -227,189 +308,143 @@ const Transcation = () => {
 
       </View>
 
-      {/* ================= MODAL ================= */}
-
-      {/* <Modal visible={modalVisible} transparent animationType="slide">
+      {/* ================= ADD / EDIT MODAL ================= */}
+      <Modal visible={modalVisible} transparent animationType="slide">
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.modalOverlay}
+          style={{ flex: 1 }}
         >
-          <TouchableOpacity
-            activeOpacity={1}
-            onPress={resetModal}
-            style={styles.modalOverlay}
-          >
-            <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
-              <View style={styles.modalContainer}>
+          <View style={styles.modalOverlay}>
+            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={resetModal} />
+
+            <View style={styles.modalContainer}>
+              {/* Handle bar */}
+              <View style={styles.handleBar} />
+
+              {/* Header row */}
+              <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>
                   {isEditing ? "Edit Transaction" : "Add Transaction"}
                 </Text>
-
-                <TextInput
-                  placeholder="Transaction Name"
-                  placeholderTextColor="#777"
-                  value={transactionName}
-                  onChangeText={setTransactionName}
-                  style={styles.modalInput}
-                />
-
-                <TextInput
-                  placeholder="Amount"
-                  placeholderTextColor="#777"
-                  keyboardType="numeric"
-                  value={amount}
-                  onChangeText={setAmount}
-                  style={styles.modalInput}
-                />
-
-                <Text style={{ color: "white", marginTop: 12 }}>
-                  Select Category
-                </Text>
-
-                <FlatList
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  data={categories}
-                  keyExtractor={(item) => item._id}
-                  renderItem={({ item }) => {
-                    const isSelected = category === item.name;
-
-                    return (
-                      <TouchableOpacity
-                        onPress={() => setCategory(item.name)}
-                        style={[
-                          styles.categoryChip,
-                          isSelected && styles.categoryChipSelected,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.categoryText,
-                            isSelected && styles.categoryTextSelected,
-                          ]}
-                        >
-                          {item.name}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  }}
-                />
-
-                <TouchableOpacity
-                  onPress={
-                    isEditing
-                      ? updateTransaction
-                      : createTransaction
-                  }
-                  style={[
-                    styles.btnBase,
-                    styles.btnSolid,
-                    { marginTop: 18, width: "100%" },
-                  ]}
-                >
-                  <Text style={styles.btnSolidText}>
-                    {isEditing ? "Update" : "Save"}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={resetModal}
-                  style={{ marginTop: 12, alignSelf: "center" }}
-                >
-                  <Text style={{ color: "#aaa" }}>Cancel</Text>
+                <TouchableOpacity onPress={resetModal} style={styles.modalCloseBtn}>
+                  <Feather name="x" size={18} color="rgba(255,255,255,0.6)" />
                 </TouchableOpacity>
               </View>
-            </TouchableOpacity>
-          </TouchableOpacity>
-        </KeyboardAvoidingView>
-      </Modal> */}
-      <Modal visible={modalVisible} transparent animationType="slide">
-  <KeyboardAvoidingView
-    behavior={Platform.OS === "ios" ? "padding" : "height"}
-    style={{ flex: 1 }}
-  >
-    <View style={styles.modalOverlay}>
-      {/* Dismiss area */}
-      <TouchableOpacity
-        style={{ flex: 1 }}
-        activeOpacity={1}
-        onPress={resetModal}
-      />
 
-      {/* Modal content — sibling, not child of dismiss area */}
-      <View style={styles.modalContainer}>
-        <Text style={styles.modalTitle}>
-          {isEditing ? "Edit Transaction" : "Add Transaction"}
-        </Text>
+              <View style={styles.modalDivider} />
 
-        <TextInput
-          placeholder="Transaction Name"
-          placeholderTextColor="#777"
-          value={transactionName}
-          onChangeText={setTransactionName}
-          style={styles.modalInput}
-        />
+              {/* Transaction Name */}
+              <Text style={styles.inputLabel}>Transaction Name</Text>
+              <TextInput
+                placeholder="e.g. Grocery shopping"
+                placeholderTextColor="rgba(255,255,255,0.25)"
+                value={transactionName}
+                onChangeText={setTransactionName}
+                style={styles.modalInput}
+              />
 
-        <TextInput
-          placeholder="Amount"
-          placeholderTextColor="#777"
-          keyboardType="numeric"
-          value={amount}
-          onChangeText={setAmount}
-          style={styles.modalInput}
-        />
+              {/* Amount */}
+              <Text style={styles.inputLabel}>Amount (₹)</Text>
+              <TextInput
+                placeholder="0"
+                placeholderTextColor="rgba(255,255,255,0.25)"
+                keyboardType="numeric"
+                value={amount}
+                onChangeText={setAmount}
+                style={styles.modalInput}
+              />
 
-        <Text style={{ color: "white", marginTop: 12 }}>
-          Select Category
-        </Text>
+              {/* Category */}
+              <Text style={styles.inputLabel}>Category</Text>
+              <FlatList
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                data={categories}
+                keyExtractor={(item) => item._id}
+                contentContainerStyle={{ paddingVertical: 4 }}
+                renderItem={({ item }) => {
+                  const isSelected = category === item.name;
+                  return (
+                    <TouchableOpacity
+                      onPress={() => setCategory(item.name)}
+                      style={[styles.categoryChip, isSelected && styles.categoryChipSelected]}
+                    >
+                      <Text style={[styles.categoryText, isSelected && styles.categoryTextSelected]}>
+                        {item.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
 
-        <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={categories}
-          keyExtractor={(item) => item._id}
-          renderItem={({ item }) => {
-            const isSelected = category === item.name;
-            return (
+              {/* Action button */}
               <TouchableOpacity
-                onPress={() => setCategory(item.name)}
-                style={[
-                  styles.categoryChip,
-                  isSelected && styles.categoryChipSelected,
-                ]}
+                onPress={isEditing ? updateTransaction : createTransaction}
+                style={[styles.btnBase, styles.btnSolid, { marginTop: 20, width: "100%" }]}
               >
-                <Text
-                  style={[
-                    styles.categoryText,
-                    isSelected && styles.categoryTextSelected,
-                  ]}
-                >
-                  {item.name}
+                <Text style={styles.btnSolidText}>
+                  {isEditing ? "Update Transaction" : "Add Transaction"}
                 </Text>
               </TouchableOpacity>
-            );
-          }}
-        />
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
-        <TouchableOpacity
-          onPress={isEditing ? updateTransaction : createTransaction}
-          style={[styles.btnBase, styles.btnSolid, { marginTop: 18, width: "100%" }]}
-        >
-          <Text style={styles.btnSolidText}>
-            {isEditing ? "Update" : "Save"}
-          </Text>
-        </TouchableOpacity>
+      {/* ================= DELETE CONFIRM MODAL ================= */}
+      <Modal visible={deleteConfirmId !== null} transparent animationType="fade">
+        <Pressable style={styles.centerOverlay} onPress={() => setDeleteConfirmId(null)}>
+          <Pressable style={styles.dialogCard} onPress={(e) => e.stopPropagation()}>
+            <View style={[styles.dialogIconWrap, styles.dialogIconRed]}>
+              <Feather name="trash-2" size={26} color="#FF5C5C" />
+            </View>
+            <Text style={styles.dialogTitle}>Delete Transaction</Text>
+            <Text style={styles.dialogSubtitle}>
+              Are you sure you want to delete this transaction? This action cannot be undone.
+            </Text>
+            <View style={styles.dialogBtnRow}>
+              <TouchableOpacity
+                onPress={() => setDeleteConfirmId(null)}
+                style={[styles.dialogBtn, styles.dialogBtnOutline]}
+              >
+                <Text style={styles.dialogBtnOutlineText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={confirmDelete}
+                style={[styles.dialogBtn, styles.dialogBtnRed]}
+              >
+                <Feather name="trash-2" size={15} color="#fff" style={{ marginRight: 6 }} />
+                <Text style={styles.dialogBtnText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
-        <TouchableOpacity
-          onPress={resetModal}
-          style={{ marginTop: 12, alignSelf: "center" }}
-        >
-          <Text style={{ color: "#aaa" }}>Cancel</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </KeyboardAvoidingView>
-</Modal>
+      {/* ================= SUCCESS MODAL ================= */}
+      <Modal visible={successModal.visible} transparent animationType="fade">
+        <Pressable style={styles.centerOverlay} onPress={() => setSuccessModal({ visible: false, type: "added" })}>
+          <Pressable style={styles.dialogCard} onPress={(e) => e.stopPropagation()}>
+            <View style={[styles.dialogIconWrap, styles.dialogIconGreen]}>
+              <Feather name="check" size={26} color={GREEN} />
+            </View>
+            <Text style={styles.dialogTitle}>
+              {successModal.type === "added" ? "Transaction Added!" : "Transaction Updated!"}
+            </Text>
+            <Text style={styles.dialogSubtitle}>
+              {successModal.type === "added"
+                ? "Your transaction has been recorded successfully."
+                : "Your transaction has been updated successfully."}
+            </Text>
+            <TouchableOpacity
+              onPress={() => setSuccessModal({ visible: false, type: "added" })}
+              style={[styles.dialogBtn, styles.dialogBtnGreen, { width: "100%" }]}
+            >
+              <Text style={styles.dialogBtnText}>Done</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -448,42 +483,90 @@ const styles = StyleSheet.create({
   },
 
 
+  /* ── Add / Edit bottom sheet ── */
   modalOverlay: {
-  flex: 1,
-  backgroundColor: "#00000099",
-  justifyContent: "flex-end", // keep this
-
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.65)",
+    justifyContent: "flex-end",
   },
 
   modalContainer: {
-    backgroundColor: "#111",
-    padding: 20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    backgroundColor: "#131416",
+    paddingHorizontal: 20,
+    paddingBottom: 32,
+    paddingTop: 12,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+
+  handleBar: {
+    width: 40,
+    height: 4,
+    borderRadius: 99,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 14,
   },
 
   modalTitle: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "700",
+    color: "#FFFFFF",
+    fontSize: 17,
+    fontFamily: "Poppins-SemiBold",
+  },
+
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  modalDivider: {
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    marginBottom: 16,
+  },
+
+  inputLabel: {
+    color: "rgba(255,255,255,0.55)",
+    fontSize: 11,
+    fontFamily: "Poppins-SemiBold",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    marginBottom: 6,
+    marginTop: 14,
   },
 
   modalInput: {
-    backgroundColor: "#1A1A1A",
-    color: "white",
-    padding: 12,
+    backgroundColor: "#1C1E21",
+    color: "#FFFFFF",
+    padding: 14,
     borderRadius: 12,
-    marginTop: 10,
+    fontSize: 14,
+    fontFamily: "Poppins-Regular",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
   },
 
   categoryChip: {
-    paddingVertical: 10,
-    paddingHorizontal: 18,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderRadius: 999,
-    backgroundColor: "#1A1A1A",
-    marginRight: 10,
+    backgroundColor: "#1C1E21",
+    marginRight: 8,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: "rgba(255,255,255,0.12)",
   },
 
   categoryChipSelected: {
@@ -492,11 +575,109 @@ const styles = StyleSheet.create({
   },
 
   categoryText: {
-    color: "white",
-    fontWeight: "600",
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 13,
+    fontFamily: "Poppins-SemiBold",
   },
 
   categoryTextSelected: {
     color: "#000",
+  },
+
+  /* ── Centered dialog (delete / success) ── */
+  centerOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.72)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 28,
+  },
+
+  dialogCard: {
+    backgroundColor: "#131416",
+    borderRadius: 22,
+    padding: 26,
+    width: "100%",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+
+  dialogIconWrap: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 18,
+    borderWidth: 1,
+  },
+
+  dialogIconRed: {
+    backgroundColor: "rgba(255,92,92,0.12)",
+    borderColor: "rgba(255,92,92,0.22)",
+  },
+
+  dialogIconGreen: {
+    backgroundColor: "rgba(36,201,122,0.12)",
+    borderColor: "rgba(36,201,122,0.22)",
+  },
+
+  dialogTitle: {
+    color: "#FFFFFF",
+    fontSize: 17,
+    fontFamily: "Poppins-SemiBold",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+
+  dialogSubtitle: {
+    color: "rgba(255,255,255,0.5)",
+    fontSize: 13,
+    fontFamily: "Poppins-Regular",
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+
+  dialogBtnRow: {
+    flexDirection: "row",
+    gap: 10,
+    width: "100%",
+  },
+
+  dialogBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+  },
+
+  dialogBtnOutline: {
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
+    backgroundColor: "rgba(255,255,255,0.04)",
+  },
+
+  dialogBtnOutlineText: {
+    color: "rgba(255,255,255,0.65)",
+    fontSize: 14,
+    fontFamily: "Poppins-SemiBold",
+  },
+
+  dialogBtnRed: {
+    backgroundColor: "#FF5C5C",
+  },
+
+  dialogBtnGreen: {
+    backgroundColor: GREEN,
+  },
+
+  dialogBtnText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontFamily: "Poppins-SemiBold",
   },
 });
