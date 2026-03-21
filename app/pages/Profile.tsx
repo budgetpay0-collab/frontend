@@ -19,6 +19,7 @@ import { useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useUserStore } from "@/store/userStore";
+import { baseURL } from "@/store/baseURL";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -31,22 +32,39 @@ const Profile = () => {
   const user = useUserStore((s) => s.user);
   const setUser = useUserStore((s) => s.setUser);
   const clearUser = useUserStore((s) => s.clearUser);
+  const fetchUser = useUserStore((s) => s.fetchUser);
 
   /* ================= FORM STATE ================= */
   const [name, setName] = useState(user?.name ?? "");
-  const [email, setEmail] = useState(user?.email ?? "");
   const [phone, setPhone] = useState(user?.phone ?? "");
   const [income, setIncome] = useState(
     user?.income !== undefined ? user.income.toString() : ""
   );
-  const [monthlySpend, setMonthlySpend] = useState(
-    user?.monthlySpend !== undefined ? user.monthlySpend.toString() : ""
-  );
+  const [goal, setGoal] = useState(user?.goal !== undefined ? user.goal.toString() : "");
+
+  // Fetch latest user data on mount
+  useEffect(() => {
+    
+    if (user?._id) fetchUser(user._id);
+    
+  },[]);
+
+  // Sync form fields whenever the user in the store changes (e.g. after a save)
+  useEffect(() => {
+    if (!user) return;
+    setName(user.name ?? "");
+    setPhone(user.phone ?? "");
+    setIncome(user.income !== undefined ? user.income.toString() : "");
+    setGoal(user.goal !== undefined ? user.goal.toString() : "");
+  }, [user]);
 
   /* ================= MODAL STATE ================= */
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const successSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const successFadeAnim = useRef(new Animated.Value(0)).current;
 
   /* ================= KEYBOARD ================= */
   const [keyboardVisible, setKeyboardVisible] = useState(false);
@@ -54,7 +72,6 @@ const Profile = () => {
 
   /* ================= SCROLL REFS ================= */
   const nameInputY = useRef(0);
-  const emailInputY = useRef(0);
   const phoneInputY = useRef(0);
   const incomeInputY = useRef(0);
   const monthlySpendInputY = useRef(0);
@@ -67,13 +84,12 @@ const Profile = () => {
 
     const modified =
       name !== user.name ||
-      email !== user.email ||
       phone !== user.phone ||
       income !== user.income.toString() ||
-      monthlySpend !== user.monthlySpend.toString();
+      goal !== (user.goal !== undefined ? user.goal.toString() : "");
 
     setHasChanges(modified);
-  }, [name, email, phone, income, monthlySpend, user]);
+  }, [name, phone, income, goal, user]);
 
   /* ================= KEYBOARD LISTENERS ================= */
   useEffect(() => {
@@ -113,6 +129,22 @@ const Profile = () => {
     ]).start();
   }, [showLogoutModal]);
 
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(successFadeAnim, {
+        toValue: showSuccessModal ? 1 : 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.spring(successSlideAnim, {
+        toValue: showSuccessModal ? 0 : SCREEN_HEIGHT,
+        damping: 20,
+        stiffness: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [showSuccessModal]);
+
   /* ================= HELPERS ================= */
   const scrollToInput = (y: number) => {
     setTimeout(() => {
@@ -139,28 +171,44 @@ const Profile = () => {
     }).format(date);
   };
   /* ================= ACTIONS ================= */
-  const onSaveProfile = () => {
+  const onSaveProfile = async () => {
     if (!user) return;
 
     if (!name.trim()) {
       Alert.alert("Error", "Name cannot be empty");
       return;
     }
-    if (!email.trim()) {
-      Alert.alert("Error", "Email cannot be empty");
-      return;
-    }
-    setUser({
-      ...user,
-      name,
-      email,
-      phone,
-      income: Number(income) || 0,
-      monthlySpend: Number(monthlySpend) || 0,
-    });
 
-    Alert.alert("Success", "Profile updated successfully");
-    setHasChanges(false);
+    try {
+      const response = await fetch(`${baseURL.nihal}/user/update`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user._id,
+          data: {
+            name,
+            phone,
+            income: Number(income) || 0,
+            goal: Number(goal) || 0,
+          },
+        }),
+      });
+
+      const json = await response.json();
+
+      if (!response.ok) {
+        Alert.alert("Error", json.message ?? "Failed to update profile");
+        return;
+      }
+
+      setUser({ ...user, ...json.user });
+      setHasChanges(false);
+      setShowSuccessModal(true);
+     
+      fetchUser(user._id);
+    } catch (err) {
+      Alert.alert("Error", "Network error. Please try again.");
+    }
   };
 
   const handleLogout = async () => {
@@ -248,27 +296,6 @@ const Profile = () => {
                   </View>
                 </View>
 
-                {/* Email */}
-                <View
-                  onLayout={(e) => (emailInputY.current = e.nativeEvent.layout.y)}
-                  style={styles.inputGroup}
-                >
-                  <Text style={styles.label}>Email</Text>
-                  <View style={styles.inputContainer}>
-                    <MaterialCommunityIcons name="email-outline" size={20} color="#888" />
-                    <TextInput
-                      value={email}
-                      onChangeText={setEmail}
-                      style={styles.input}
-                      placeholder="Email"
-                      placeholderTextColor="#666"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      onFocus={() => scrollToInput(emailInputY.current)}
-                    />
-                  </View>
-                </View>
-
                 {/* Phone */}
                 <View
                   onLayout={(e) => (phoneInputY.current = e.nativeEvent.layout.y)}
@@ -294,19 +321,36 @@ const Profile = () => {
               <View style={styles.formSection}>
                 <Text style={styles.sectionTitle}>Financial Information</Text>
 
-                {/* Annual Income */}
+                {/* Monthly Income */}
                 <View
                   onLayout={(e) => (incomeInputY.current = e.nativeEvent.layout.y)}
                   style={styles.inputGroup}
                 >
-                  <Text style={styles.label}>Annual Income</Text>
+                  <Text style={styles.label}>Monthly Income</Text>
                   <View style={styles.inputContainer}>
-                    <MaterialCommunityIcons name="currency-usd" size={20} color="#888" />
+                    <MaterialCommunityIcons name="currency-inr" size={20} color="#888" />
                     <TextInput
                       value={income}
                       onChangeText={setIncome}
                       style={styles.input}
-                      placeholder="Annual Income"
+                      placeholder="Monthly Income"
+                      placeholderTextColor="#666"
+                      keyboardType="numeric"
+                      onFocus={() => scrollToInput(incomeInputY.current)}
+                    />
+                  </View>
+                </View>
+
+                {/* Goal */}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Financial Goal</Text>
+                  <View style={styles.inputContainer}>
+                    <MaterialCommunityIcons name="flag-outline" size={20} color="#888" />
+                    <TextInput
+                      value={goal}
+                      onChangeText={setGoal}
+                      style={styles.input}
+                      placeholder="e.g. 500000"
                       placeholderTextColor="#666"
                       keyboardType="numeric"
                       onFocus={() => scrollToInput(incomeInputY.current)}
@@ -349,11 +393,34 @@ const Profile = () => {
         </KeyboardAvoidingView>
       </View>
 
+      {/* SUCCESS MODAL */}
+      <Modal visible={showSuccessModal} transparent animationType="none">
+        <Pressable style={styles.modalOverlay} onPress={() => setShowSuccessModal(false)}>
+          <Animated.View style={[styles.modalBackdrop, { opacity: successFadeAnim }]} />
+          <Animated.View style={[styles.modalContent, { transform: [{ translateY: successSlideAnim }] }]}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalIconContainer}>
+              <View style={styles.successIconBg}>
+                <MaterialCommunityIcons name="check-circle-outline" size={36} color="#16C784" />
+              </View>
+            </View>
+            <Text style={styles.modalTitle}>Profile Updated</Text>
+            <Text style={styles.modalDescription}>
+              Your profile has been saved successfully.
+            </Text>
+            <Pressable style={styles.successDoneBtn} onPress={() => setShowSuccessModal(false)}>
+              <Text style={styles.successDoneBtnText}>Done</Text>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Modal>
+
       {/* LOGOUT MODAL */}
       <Modal visible={showLogoutModal} transparent>
         <Pressable style={styles.modalOverlay} onPress={() => setShowLogoutModal(false)}>
           <Animated.View style={[styles.modalBackdrop, { opacity: fadeAnim }]} />
           <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
+            <View style={styles.modalHandle} />
             <View style={styles.modalIconContainer}>
               <View style={styles.modalIconBg}>
                 <MaterialCommunityIcons name="logout" size={32} color="#FF5252" />
@@ -641,6 +708,39 @@ const styles = StyleSheet.create({
 
   modalLogoutText: {
     color: "#FFFFFF",
+    fontSize: 15,
+    fontFamily: "Poppins-SemiBold",
+  },
+
+  modalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignSelf: "center",
+    marginBottom: 28,
+  },
+
+  successIconBg: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(22,199,132,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "rgba(22,199,132,0.3)",
+  },
+
+  successDoneBtn: {
+    backgroundColor: "#16C784",
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+
+  successDoneBtnText: {
+    color: "#06140F",
     fontSize: 15,
     fontFamily: "Poppins-SemiBold",
   },

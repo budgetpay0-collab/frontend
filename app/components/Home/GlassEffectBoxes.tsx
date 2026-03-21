@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRangeStore } from "../../../store/rangeStore";
 
 type BoxItem = {
   id: string;
@@ -30,31 +31,52 @@ const formatINR = (n: number) => {
   }
 };
 
-const GlassEffectBoxes: React.FC<Props> = ({ monthlyIncome, monthlySpend, saving }) => {
-  const remaining = Math.max(monthlyIncome - monthlySpend, 0);
+const RANGE_LABEL: Record<string, string> = {
+  D: "Daily",
+  W: "Weekly",
+  M: "Monthly",
+  Y: "Yearly",
+};
 
-  const savingsPct = monthlyIncome > 0 ? (saving / monthlyIncome) * 100 : 0;
+const RANGE_MULTIPLIER: Record<string, number> = {
+  D: 1 / 30,
+  W: 1 / 4,
+  M: 1,
+  Y: 12,
+};
+
+const GlassEffectBoxes: React.FC<Props> = ({ monthlyIncome, monthlySpend, saving }) => {
+  const activeRange = useRangeStore((s) => s.activeRange);
+  const multiplier = RANGE_MULTIPLIER[activeRange];
+  const label = RANGE_LABEL[activeRange];
+
+  const income = monthlyIncome * multiplier;
+  const spend = monthlySpend * multiplier;
+  const savedAmt = saving * multiplier;
+  const remaining = Math.max(income - spend, 0);
+
+  const savingsPct = income > 0 ? (savedAmt / income) * 100 : 0;
 
   const data: BoxItem[] = useMemo(
     () => [
       {
         id: "income",
-        title: "Monthly Income",
-        value: `₹${formatINR(monthlyIncome)}`,
+        title: `${label} Income`,
+        value: `₹${formatINR(income)}`,
       },
       {
         id: "remaining",
-        title: "Monthly Remaining",
+        title: `${label} Remaining`,
         value: `₹${formatINR(remaining)}`,
-        subText: monthlySpend > 0 ? "After spending" : "No spending yet",
-        subColor: monthlySpend > 0 ? "rgba(255,255,255,0.75)" : "#ff3b30",
+        subText: spend > 0 ? "After spending" : "No spending yet",
+        subColor: spend > 0 ? "rgba(255,255,255,0.75)" : "#ff3b30",
         badge: { bg: "#ff3b30", icon: "trending-down" },
       },
       {
         id: "spent",
-        title: "Monthly Spent",
-        value: `₹${formatINR(monthlySpend)}`,
-        subText: "Monthly Total",
+        title: `${label} Spent`,
+        value: `₹${formatINR(spend)}`,
+        subText: `${label} Total`,
         subColor: "#34c759",
         badge: { bg: "#34c759", icon: "trending-up" },
       },
@@ -62,11 +84,11 @@ const GlassEffectBoxes: React.FC<Props> = ({ monthlyIncome, monthlySpend, saving
         id: "savings",
         title: "Savings Progress",
         value: `${savingsPct.toFixed(1)}%`,
-        subText: `₹${formatINR(saving)} saved`,
+        subText: `₹${formatINR(savedAmt)} saved`,
         subColor: "rgba(255,255,255,0.75)",
       },
     ],
-    [monthlyIncome, monthlySpend, saving, remaining, savingsPct]
+    [income, spend, savedAmt, remaining, savingsPct, label]
   );
 
   return (

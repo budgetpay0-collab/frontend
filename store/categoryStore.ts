@@ -25,6 +25,7 @@ interface CategoryStore {
   fetchCategories: (userId: string) => Promise<void>;
   addCategory: (userId: string, category: any) => Promise<void>;
   deleteCategory: (userId: string, name: string) => Promise<void>;
+  editCategory: (userId: string, name: string, updates: Partial<Omit<Category, "_id" | "id">>) => Promise<void>;
 }
 
 export const useCategoryStore = create<CategoryStore>((set, get) => ({
@@ -103,6 +104,47 @@ export const useCategoryStore = create<CategoryStore>((set, get) => ({
         Alert.alert("Duplicate", "Category already exists");
       } else {
         Alert.alert("Error", "Could not add category");
+      }
+    } finally {
+      set({ actionLoading: false });
+    }
+  },
+
+  /* ================= EDIT ================= */
+
+  editCategory: async (userId, name, updates) => {
+    try {
+      set({ actionLoading: true });
+
+      const res = await axios.post(`${baseURLValue}/category/edit`, {
+        userId,
+        name,
+        ...updates,
+      });
+
+      if (res.status === 200) {
+        const updated = res.data.data;
+        const categories = get().categories.map((cat) =>
+          cat.name === name ? updated : cat
+        );
+
+        const totalAllocated = categories.reduce(
+          (sum: number, cat: any) => sum + cat.allocated,
+          0
+        );
+
+        const totalSpent = categories.reduce(
+          (sum: number, cat: any) => sum + cat.spent,
+          0
+        );
+
+        set({ categories, monthlyIncome: totalAllocated, monthlySpend: totalSpent });
+      }
+    } catch (err: any) {
+      if (err?.response?.status === 409) {
+        Alert.alert("Duplicate", "Category name already exists");
+      } else {
+        Alert.alert("Error", "Could not update category");
       }
     } finally {
       set({ actionLoading: false });

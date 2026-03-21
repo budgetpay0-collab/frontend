@@ -36,10 +36,14 @@ const Index = () => {
   const [monthlySpent, setMonthlySpent] = useState(0);
   const userData = useUserStore((s) => s.user);
   const setUser = useUserStore((s) => s.setUser);
+  const fetchUser = useUserStore((s) => s.fetchUser);
   const [transactions, setTransactions] = useState([]);
   const hydration  = useUserStore((s)=>s.hydration)
   const fetchCategories = useCategoryStore((s) => s.fetchCategories);
   useEffect(() => {
+   
+   
+
     async function getTransactions() {
       if (!userData) return;
       const fetchedTransactions = await fetchTransactions(userData._id, baseURL.nihal);
@@ -247,7 +251,7 @@ const Index = () => {
             monthlySpend={monthlySpent}
             saving={saving}
           />
-          <StreakBox />
+          <StreakBox userId={userData?._id ?? ""} />
         <View style ={{marginBottom : 20}}></View>
           <FirstGraph transactions={transactions} filter = "day"
           />

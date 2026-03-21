@@ -1,12 +1,11 @@
 // components/Header.tsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
-
-type RangeKey = "D" | "W" | "M" | "Y";
+import { useRangeStore, RangeKey } from "../../../store/rangeStore";
 
 const Header = () => {
   const tabs = useMemo<RangeKey[]>(() => ["D", "W", "M", "Y"], []);
-  const [active, setActive] = useState<RangeKey>("D"); // ✅ default selected = D
+  const { activeRange: active, setActiveRange: setActive } = useRangeStore();
 
   return (
     <View style={styles.wrap}>

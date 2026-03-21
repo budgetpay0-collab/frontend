@@ -13,6 +13,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import axios from "axios";
@@ -52,10 +53,15 @@ const Transcation = () => {
   const [amount, setAmount] = useState("");
   const [transactionName, setTransactionName] = useState("");
   const [category, setCategory] = useState("");
+  const [dateOfTransaction, setDateOfTransaction] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const setHydration = useUserStore((s)=>s.setHydration)
   const hydration = useUserStore((s)=>s.hydration)
   const getCategories = useCategoryStore((s)=>s.fetchCategories)
-  const categories = useCategoryStore((s)=>s.categories)  
+  const categories = useCategoryStore((s)=>s.categories)
+  const addCategory = useCategoryStore((s)=>s.addCategory)
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [addingCategory, setAddingCategory] = useState(false);
   /* ================= FETCH TRANSACTIONS ================= */
 
   const fetchTransactions = async () => {
@@ -91,6 +97,7 @@ const Transcation = () => {
           amount: Number(amount),
           transactionName,
           category,
+          dateOfTransaction,
         }
       );
 
@@ -116,6 +123,7 @@ const Transcation = () => {
           amount: Number(amount),
           transactionName,
           category,
+          dateOfTransaction,
         }
       );
 
@@ -155,10 +163,19 @@ const Transcation = () => {
     setAmount(String(item.amount));
     setTransactionName(item.transactionName);
     setCategory(item.category);
+    setDateOfTransaction(item.dateOfTransaction ? new Date(item.dateOfTransaction) : new Date());
     setModalVisible(true);
   };
 
   /* ================= RESET ================= */
+
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    setAddingCategory(true);
+    await addCategory(USER_ID, { name: newCategoryName.trim(), allocated: 0 });
+    setNewCategoryName("");
+    setAddingCategory(false);
+  };
 
   const resetModal = () => {
     setModalVisible(false);
@@ -167,6 +184,10 @@ const Transcation = () => {
     setAmount("");
     setTransactionName("");
     setCategory("");
+    setDateOfTransaction(new Date());
+    setShowDatePicker(false);
+    setNewCategoryName("");
+    setAddingCategory(false);
   };
 
   /* ================= FILTER / SORT ================= */
@@ -356,31 +377,86 @@ const Transcation = () => {
 
               {/* Category */}
               <Text style={styles.inputLabel}>Category</Text>
-              <FlatList
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                data={categories}
-                keyExtractor={(item) => item._id}
-                contentContainerStyle={{ paddingVertical: 4 }}
-                renderItem={({ item }) => {
-                  const isSelected = category === item.name;
-                  return (
+              {categories.length === 0 ? (
+                <View style={styles.noCategoryBox}>
+                  <Text style={styles.noCategoryText}>No categories yet. Add one to continue.</Text>
+                  <View style={styles.noCategoryRow}>
+                    <TextInput
+                      placeholder="Category name"
+                      placeholderTextColor="rgba(255,255,255,0.25)"
+                      value={newCategoryName}
+                      onChangeText={setNewCategoryName}
+                      style={[styles.modalInput, { flex: 1, marginTop: 0 }]}
+                    />
                     <TouchableOpacity
-                      onPress={() => setCategory(item.name)}
-                      style={[styles.categoryChip, isSelected && styles.categoryChipSelected]}
+                      onPress={handleAddCategory}
+                      disabled={addingCategory || !newCategoryName.trim()}
+                      style={[styles.addCategoryBtn, (!newCategoryName.trim() || addingCategory) && { opacity: 0.4 }]}
                     >
-                      <Text style={[styles.categoryText, isSelected && styles.categoryTextSelected]}>
-                        {item.name}
-                      </Text>
+                      <Feather name="plus" size={18} color="#000" />
                     </TouchableOpacity>
-                  );
-                }}
-              />
+                  </View>
+                </View>
+              ) : (
+                <FlatList
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  data={categories}
+                  keyExtractor={(item) => item._id}
+                  contentContainerStyle={{ paddingVertical: 4 }}
+                  renderItem={({ item }) => {
+                    const isSelected = category === item.name;
+                    return (
+                      <TouchableOpacity
+                        onPress={() => setCategory(item.name)}
+                        style={[styles.categoryChip, isSelected && styles.categoryChipSelected]}
+                      >
+                        <Text style={[styles.categoryText, isSelected && styles.categoryTextSelected]}>
+                          {item.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  }}
+                />
+              )}
+
+              {/* Date of Transaction */}
+              <Text style={styles.inputLabel}>Date of Transaction</Text>
+              <TouchableOpacity
+                onPress={() => setShowDatePicker(true)}
+                style={styles.datePickerBtn}
+                activeOpacity={0.75}
+              >
+                <Feather name="calendar" size={15} color="rgba(255,255,255,0.5)" style={{ marginRight: 8 }} />
+                <Text style={styles.datePickerText}>
+                  {dateOfTransaction.toLocaleDateString("en-IN", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </Text>
+              </TouchableOpacity>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={dateOfTransaction}
+                  mode="date"
+                  display={Platform.OS === "ios" ? "inline" : "default"}
+                  maximumDate={new Date()}
+                  onChange={(_, selected) => {
+                    setShowDatePicker(Platform.OS === "ios");
+                    if (selected) setDateOfTransaction(selected);
+                  }}
+                  style={{ marginTop: 8 }}
+                  themeVariant="dark"
+                />
+              )}
 
               {/* Action button */}
               <TouchableOpacity
                 onPress={isEditing ? updateTransaction : createTransaction}
-                style={[styles.btnBase, styles.btnSolid, { marginTop: 20, width: "100%" }]}
+                disabled={categories.length === 0}
+                style={[styles.btnBase, styles.btnSolid, { marginTop: 20, width: "100%" }, categories.length === 0 && { opacity: 0.4 }]}
               >
                 <Text style={styles.btnSolidText}>
                   {isEditing ? "Update Transaction" : "Add Transaction"}
@@ -557,6 +633,52 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins-Regular",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
+  },
+
+  noCategoryBox: {
+    backgroundColor: "#1C1E21",
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    gap: 10,
+  },
+
+  noCategoryText: {
+    color: "rgba(255,255,255,0.45)",
+    fontSize: 12,
+    fontFamily: "Poppins-Regular",
+  },
+
+  noCategoryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  addCategoryBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: GREEN,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  datePickerBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1C1E21",
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+
+  datePickerText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontFamily: "Poppins-Regular",
   },
 
   categoryChip: {

@@ -12,7 +12,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -44,6 +43,20 @@ export type StreakBoxRef = {
 const DEFAULT_SUBTITLE =
   "Track your daily expenses logging\nand unlock smart guidance";
 
+function getTodayString() {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function diffInDays(fromDate: string, toDate: string) {
+  const from = new Date(`${fromDate}T00:00:00`);
+  const to = new Date(`${toDate}T00:00:00`);
+  return Math.floor((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
+}
+
 const StreakBox = forwardRef<StreakBoxRef, Props>(
   (
     {
@@ -60,21 +73,6 @@ const StreakBox = forwardRef<StreakBoxRef, Props>(
     const [lastMarkedDate, setLastMarkedDate] = useState<string | null>(null);
 
     const storageKey = useMemo(() => `${STORAGE_PREFIX}:${userId}`, [userId]);
-
-    const getTodayString = () => {
-      const now = new Date();
-      const yyyy = now.getFullYear();
-      const mm = String(now.getMonth() + 1).padStart(2, "0");
-      const dd = String(now.getDate()).padStart(2, "0");
-      return `${yyyy}-${mm}-${dd}`;
-    };
-
-    const diffInDays = (fromDate: string, toDate: string) => {
-      const from = new Date(`${fromDate}T00:00:00`);
-      const to = new Date(`${toDate}T00:00:00`);
-      const diff = to.getTime() - from.getTime();
-      return Math.floor(diff / (1000 * 60 * 60 * 24));
-    };
 
     const readStoredStreak = useCallback(async (): Promise<StoredStreak> => {
       try {
@@ -165,7 +163,7 @@ const loadStreak = useCallback(async () => {
   setStreakDays(nextData.streakDays);
   setLongestStreak(nextData.longestStreak);
   setLastMarkedDate(nextData.lastMarkedDate);
-}, [diffInDays, readStoredStreak, userId, writeStoredStreak]);
+}, [readStoredStreak, userId, writeStoredStreak]);
 
 /**
  * Kept for external ref consumers. Safe to call multiple times —
@@ -247,16 +245,16 @@ useEffect(() => {
       >
         <View style={styles.topRow}>
           <View style={styles.leftIconWrap}>
-            <Image
-              style={{ width: 70, height: 70 }}
-              source={require("@/assets/images/Gloss.png")}
-              resizeMode="contain"
-            />
+            <Text style={styles.fireEmoji}>
+              {streakDays >= 30 ? "🔥🔥🔥" : streakDays >= 7 ? "🔥🔥" : "🔥"}
+            </Text>
+            <Text style={styles.streakBadge}>{streakDays}d</Text>
           </View>
 
           <View style={styles.content}>
             <Text style={styles.title}>
-              {streakDays} Days <Text style={styles.titleAccent}>streak</Text>
+              {streakDays} Days{" "}
+              <Text style={styles.titleAccent}>streak 🔥</Text>
             </Text>
 
             <Text style={styles.subtitle}>{subtitle}</Text>
@@ -353,6 +351,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     position: "relative",
+  },
+
+  fireEmoji: {
+    fontSize: 28,
+    textAlign: "center",
+  },
+
+  streakBadge: {
+    fontSize: 11,
+    fontFamily: "Poppins-Regular",
+    color: GREEN,
+    fontWeight: "700",
+    textAlign: "center",
+    marginTop: 2,
   },
 
   content: {

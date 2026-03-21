@@ -1,4 +1,4 @@
-import React, { use, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   StyleSheet,
@@ -14,18 +14,14 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import axios from "axios";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
 import Header from "../components/Budget/Header";
 import GlassEffectBoxes from "../components/Budget/GlassEffectBoxes";
 import OverallBudgetProgress from "../components/Budget/OverallBudgetProgress";
 import DynamicCategory from "../components/Budget/DynamicCategory";
-import { baseURL } from "@/store/baseURL";
 import { useUserStore } from "@/store/userStore";
 import { useCategoryStore } from "@/store/categoryStore";
-
-const baseURLValue = baseURL.nihal;
 
 
 const COLORS = [
@@ -53,18 +49,24 @@ const ICONS = [
 
 const Budget = () => {
   
-  const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const user = useUserStore((s) => s.user);
   const userId = user?._id; // Replace with dynamic user ID
   
 
-  // Modal State
+  // Add Modal State
   const [modalVisible, setModalVisible] = useState(false);
   const [categoryName, setCategoryName] = useState("");
   const [allocated, setAllocated] = useState("");
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [selectedIcon, setSelectedIcon] = useState(ICONS[0]);
+
+  // Edit Modal State
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editOriginalName, setEditOriginalName] = useState("");
+  const [editAllocated, setEditAllocated] = useState("");
+  const [editColor, setEditColor] = useState(COLORS[0]);
+  const [editIcon, setEditIcon] = useState(ICONS[0]);
 
   /* ================= FETCH ================= */
 
@@ -72,8 +74,10 @@ const Budget = () => {
   const categories = useCategoryStore((s) => s.categories);
   const monthlyIncome = useCategoryStore((s) => s.monthlyIncome);
   const monthlySpend = useCategoryStore((s) => s.monthlySpend);
+  const loading = useCategoryStore((s) => s.loading);
  const addCategory = useCategoryStore((s) => s.addCategory);
  const handleDeleteCategory = useCategoryStore((s) => s.deleteCategory);
+ const handleEditCategory = useCategoryStore((s) => s.editCategory);
   useEffect(() => {
     fetchCategories(userId);
   }, []);
@@ -117,6 +121,31 @@ const Budget = () => {
     setAllocated("");
     setSelectedColor(COLORS[0]);
     setSelectedIcon(ICONS[0]);
+  };
+
+  /* ================= EDIT ================= */
+
+  const openEditModal = (name: string) => {
+    const cat = categories.find((c) => c.name === name);
+    if (!cat) return;
+    setEditOriginalName(cat.name);
+    setEditAllocated(String(cat.allocated));
+    setEditColor(cat.color);
+    setEditIcon(cat.icon);
+    setEditModalVisible(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editAllocated) {
+      Alert.alert("Validation", "Please fill all required fields");
+      return;
+    }
+    await handleEditCategory(userId, editOriginalName, {
+      allocated: Number(editAllocated),
+      color: editColor,
+      icon: editIcon,
+    });
+    setEditModalVisible(false);
   };
 
   /* ================= DELETE ================= */
@@ -172,8 +201,9 @@ const Budget = () => {
             <Text style={styles.emptyText}>No Categories Found</Text>
           ) : (
             <DynamicCategory
-              categories={categories}
+              categories={categories as any}
               onDelete={deleteCategory}
+              onEdit={openEditModal}
             />
           )}
 
@@ -269,6 +299,85 @@ const Budget = () => {
 
                 <Pressable
                   onPress={() => setModalVisible(false)}
+                  style={styles.cancelBtn}
+                >
+                  <Text style={{ color: "#aaa" }}>Cancel</Text>
+                </Pressable>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
+
+        {/* ================= EDIT MODAL ================= */}
+
+        <Modal
+          visible={editModalVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setEditModalVisible(false)}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={{ flex: 1 }}
+          >
+            <View style={styles.modalOverlay}>
+              <Pressable style={{ flex: 1 }} onPress={() => setEditModalVisible(false)} />
+
+              <View style={styles.modalContainer}>
+                <Text style={styles.modalTitle}>Edit "{editOriginalName}"</Text>
+
+                <TextInput
+                  placeholder="Allocated Amount"
+                  placeholderTextColor="#999"
+                  keyboardType="numeric"
+                  style={styles.input}
+                  value={editAllocated}
+                  onChangeText={setEditAllocated}
+                />
+
+                <Text style={styles.sectionTitle}>Select Color</Text>
+                <View style={styles.colorRow}>
+                  {COLORS.map((color) => (
+                    <Pressable
+                      key={color}
+                      onPress={() => setEditColor(color)}
+                      style={[
+                        styles.colorCircle,
+                        { backgroundColor: color },
+                        editColor === color && styles.colorSelected,
+                      ]}
+                    />
+                  ))}
+                </View>
+
+                <Text style={styles.sectionTitle}>Select Icon</Text>
+                <FlatList
+                  horizontal
+                  data={ICONS}
+                  keyExtractor={(item) => item}
+                  renderItem={({ item }) => (
+                    <Pressable
+                      onPress={() => setEditIcon(item)}
+                      style={[
+                        styles.iconWrap,
+                        editIcon === item && styles.iconSelected,
+                      ]}
+                    >
+                      <MaterialCommunityIcons name={item as any} size={26} color="white" />
+                    </Pressable>
+                  )}
+                />
+
+                <Pressable onPress={handleSaveEdit} style={styles.saveBtn}>
+                  {actionLoading ? (
+                    <ActivityIndicator color="#000" />
+                  ) : (
+                    <Text style={styles.saveBtnText}>Save Changes</Text>
+                  )}
+                </Pressable>
+
+                <Pressable
+                  onPress={() => setEditModalVisible(false)}
                   style={styles.cancelBtn}
                 >
                   <Text style={{ color: "#aaa" }}>Cancel</Text>

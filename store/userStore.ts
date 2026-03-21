@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
 
 /* ================= TYPES ================= */
 
@@ -13,6 +14,7 @@ export interface User {
   lastLoginAt?: Date;
   income: number;
   monthlySpend: number;
+  goal?: number;
   _id :any;
   
 }
@@ -25,6 +27,7 @@ interface UserStore {
   setUser: (user: User) => void;
   updateUser: (data: Partial<User>) => void;
   clearUser: () => void;
+  fetchUser: (id: string) => Promise<void>;
   hydration : boolean;
   setHydration : (props :boolean)=>void
 }
@@ -53,7 +56,18 @@ export const useUserStore = create<UserStore>()(
         set({
           user: null,
         }),
-        hydration : false,
+
+      // Fetch latest user from server and update store
+      fetchUser: async (id: string) => {
+        try {
+          const { baseURL } = await import("./baseURL");
+          
+          const response = await axios.get(`${baseURL.nihal}/user/${id}`);
+         
+          set({ user: response.data });
+        } catch {}
+      },
+        hydration : true,
         setHydration : (props : boolean) =>set({hydration : props})
 
     }),

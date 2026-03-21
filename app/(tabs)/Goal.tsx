@@ -7,11 +7,13 @@ import MonthlyGoal from "../components/Goal/MonthlyGoal";
 import Card from "../components/Goal/Card";
 import SavingTip from "../components/Goal/SavingTip";
 import { useCategoryStore } from "@/store/categoryStore";
+import { useUserStore } from "@/store/userStore";
 
 const Goal = () => {
   const categories = useCategoryStore((state) => state.categories);
+  const user = useUserStore((state) => state.user);
 
-  const { totalAllocated, totalSpent } = useMemo(() => {
+  const { totalSpent } = useMemo(() => {
     return categories.reduce(
       (acc, category) => ({
         totalAllocated: acc.totalAllocated + (category.allocated ?? 0),
@@ -20,6 +22,23 @@ const Goal = () => {
       { totalAllocated: 0, totalSpent: 0 }
     );
   }, [categories]);
+
+  const income = user?.income ?? 0;
+  const goal = user?.goal ?? 0;
+  const moneyLeft = income - totalSpent;
+
+  const { monthEndDate, daysLeft, dailyTarget, incomePercent } = useMemo(() => {
+    const now = new Date();
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const dd = String(lastDay.getDate()).padStart(2, "0");
+    const mm = String(lastDay.getMonth() + 1).padStart(2, "0");
+    const yyyy = lastDay.getFullYear();
+    const monthEndDate = `${dd}/${mm}/${yyyy}`;
+    const daysLeft = lastDay.getDate() - now.getDate() + 1;
+    const dailyTarget = goal > 0 ? goal / 30 : 0;
+    const incomePercent = income > 0 ? (goal / income) * 100 : 0;
+    return { monthEndDate, daysLeft, dailyTarget, incomePercent };
+  }, [goal, income]);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -31,13 +50,13 @@ const Goal = () => {
       >
         <TopHeader />
 
-        <MonthlyGoal current={totalSpent} target={totalAllocated} />
+        <MonthlyGoal moneyLeft={moneyLeft} goal={goal} income={income} totalSpent={totalSpent} />
 
         <Card
-          monthEndDate="15/05/2026"
-          daysLeft={15}
-          dailyTarget={2000}
-          incomePercent={33.8}
+          monthEndDate={monthEndDate}
+          daysLeft={daysLeft}
+          dailyTarget={dailyTarget}
+          incomePercent={incomePercent}
         />
 
         <Image
