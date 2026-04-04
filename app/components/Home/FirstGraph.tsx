@@ -155,13 +155,7 @@ const FirstGraph = ({
           </View>
         </ScrollView>
 
-        <View style={styles.weekRow}>
-          {DAY_NAMES.map((l, i) => (
-            <TouchableOpacity key={i} style={styles.weekPill}>
-              <Text style={styles.weekText}>{l}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+       
       </View>
     </View>
   );
